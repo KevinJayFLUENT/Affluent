@@ -35,6 +35,15 @@ export async function runDigest() {
   return res.json();
 }
 
+export async function generateBrief(targetId) {
+  const res = await fetch("/api/brief", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ targetId }),
+  });
+  return res.json();
+}
+
 export async function executeAction(payload) {
   const res = await fetch("/api/act", {
     method: "POST",

@@ -1,7 +1,7 @@
 import express from "express";
 import { PATTERN_LIBRARY } from "./data/targets.js";
 import { state, getTarget, rankedTargets, applyAction, markEnriched, resetState } from "./state.js";
-import { analyzeTarget, rescoreAfterAction, writeDigest, aiAvailable } from "./claude.js";
+import { analyzeTarget, rescoreAfterAction, writeDigest, prepMeetingBrief, aiAvailable } from "./claude.js";
 import { computeConversationSignals, conversationSummaryLine } from "./conversation.js";
 
 const withConversation = (t) => ({ ...t, conversationSignals: computeConversationSignals(t) });
@@ -295,6 +295,49 @@ app.post("/api/simulate", (req, res) => {
     logEntry,
     task,
   });
+});
+
+// ── Meeting prep brief ───────────────────────────────────────────────────
+// One-pager ahead of the next touch. Live Claude when available; otherwise
+// assembled deterministically from the cached analysis.
+app.post("/api/brief", async (req, res) => {
+  const target = getTarget(req.body?.targetId);
+  if (!target) return res.status(404).json({ error: "unknown target" });
+
+  let brief = null;
+  if (aiAvailable()) {
+    try {
+      brief = await prepMeetingBrief(target, PATTERN_LIBRARY, computeConversationSignals(target));
+      brief.source = "claude-opus-5";
+    } catch (err) {
+      console.error("brief fallback:", err.message);
+    }
+  }
+  if (!brief) {
+    const a = target.cachedAnalysis;
+    const firstSentence = (s = "") => (s.match(/^.+?[.!?](?=\s|$)/s) || [s])[0];
+    brief = {
+      meetingContext: target.nextTouch
+        ? `${target.nextTouch.action}. ${target.nextTouch.reason}`
+        : `Next touch with ${target.owner.name} — ${target.stage}.`,
+      objective: (target.recommendedOverride || a.recommendedAction).title,
+      relationshipRecap: a.relationshipRead.summary,
+      talkingPoints: [
+        ...(a.revivalRadar
+          ? [{ point: a.revivalRadar.catalyst, why: firstSentence(a.revivalRadar.whyItChangesTheMath) }]
+          : []),
+        { point: `What to expect from ${target.owner.name.split(" ")[0]}`, why: firstSentence(a.archetype.whatToExpect) },
+        { point: "Owner mood going in", why: firstSentence(a.relationshipRead.ownerMood) },
+        { point: "The precedent", why: firstSentence(a.archetype.dealTwin) },
+      ].slice(0, 4),
+      landmines: a.archetype.flashpoints,
+      theAsk: (target.recommendedOverride || a.recommendedAction).rationale,
+      source: "cached",
+    };
+  }
+  brief.generatedAt = new Date().toISOString();
+  target.meetingBrief = brief;
+  res.json({ brief });
 });
 
 // ── AI diagnostics: tiny live call, returns ok or the real error ─────────

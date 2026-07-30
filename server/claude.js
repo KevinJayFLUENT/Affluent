@@ -176,6 +176,68 @@ export async function writeDigest(portfolio, patternLibrary) {
   return extractJson(response);
 }
 
+const BRIEF_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["meetingContext", "objective", "relationshipRecap", "talkingPoints", "landmines", "theAsk"],
+  properties: {
+    meetingContext: { type: "string" },
+    objective: { type: "string" },
+    relationshipRecap: { type: "string" },
+    talkingPoints: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["point", "why"],
+        properties: { point: { type: "string" }, why: { type: "string" } },
+      },
+    },
+    landmines: { type: "array", items: { type: "string" } },
+    theAsk: { type: "string" },
+  },
+};
+
+// One-page pre-meeting brief. Throws on failure; caller assembles a
+// fallback from the cached analysis.
+export async function prepMeetingBrief(target, patternLibrary, conversationSignals = []) {
+  const response = await createWithFallbackModels({
+    model: MODEL,
+    max_tokens: 2500,
+    output_config: {
+      effort: "low",
+      format: { type: "json_schema", schema: BRIEF_SCHEMA },
+    },
+    system:
+      "You are the intelligence engine of TCan Express, an M&A CRM. Write a pre-meeting brief for Kevin Jay (Corp Dev deal lead) " +
+      "ahead of the next scheduled touch with this acquisition target. He'll read it in the car — make every line earn its place. " +
+      "meetingContext: what this meeting is and why now (1-2 sentences). objective: the single thing to walk out with. " +
+      "relationshipRecap: 2-3 sentences of history that matter in the room. talkingPoints: 3-4, each with a one-line why. " +
+      "landmines: specific things NOT to say or do with this seller, drawn from the record and archetype. " +
+      "theAsk: exactly how to close the meeting. Ground everything in names, dates, and numbers from the record; cite the " +
+      "pattern-library analog where it sharpens a point. BE CONCISE — total under 1200 tokens.\n\n" + patternLibrary,
+    messages: [
+      {
+        role: "user",
+        content: JSON.stringify({
+          company: target.company,
+          owner: target.owner,
+          stage: target.stage,
+          scores: target.scores,
+          upcomingTouch: target.nextTouch,
+          nextPlannedAction: target.recommendedOverride || target.cachedAnalysis?.recommendedAction?.title,
+          conversationIndicators: conversationSignals,
+          enrichmentSignals: target.signals,
+          blockers: target.blockers.map(({ label, status, detail }) => ({ label, status, detail })),
+          activityHistory: target.activity,
+          today: new Date().toISOString().slice(0, 10),
+        }),
+      },
+    ],
+  });
+  return extractJson(response);
+}
+
 const ACT_SCHEMA = {
   type: "object",
   additionalProperties: false,

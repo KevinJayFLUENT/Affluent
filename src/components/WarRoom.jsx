@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { analyzeTarget, executeAction, simulateReply } from "../api.js";
+import { analyzeTarget, executeAction, simulateReply, generateBrief } from "../api.js";
 import { useAnimatedNumber } from "../hooks.js";
 import AccountDetails from "./AccountDetails.jsx";
 import CompanyLogo from "./CompanyLogo.jsx";
@@ -152,6 +152,63 @@ function FactorModal({ target, analysis, mode, onClose }) {
   );
 }
 
+function BriefModal({ target, brief, loading, onClose, onRegenerate }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <h2>Meeting Brief — {target.company}</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        {loading && (
+          <div className="analyzing" style={{ border: "none", boxShadow: "none" }}>
+            <div className="spinner" />
+            <div>Agent preparing the brief from {target.activity.length} logged interactions…</div>
+          </div>
+        )}
+        {brief && !loading && (
+          <div className="brief">
+            <p className="brief-context">{brief.meetingContext}</p>
+            <div className="brief-objective">
+              <label>Walk out with</label>
+              {brief.objective}
+            </div>
+            <div className="brief-section">
+              <label>Relationship in one breath</label>
+              <p>{brief.relationshipRecap}</p>
+            </div>
+            <div className="brief-section">
+              <label>Talking points</label>
+              <ol className="brief-points">
+                {brief.talkingPoints.map((tp, i) => (
+                  <li key={i}>
+                    <b>{tp.point}</b>
+                    <span> — {tp.why}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div className="brief-section">
+              <label>Landmines — do not touch</label>
+              <ul className="brief-landmines">
+                {brief.landmines.map((l, i) => <li key={i}>{l}</li>)}
+              </ul>
+            </div>
+            <div className="brief-ask">
+              <label>Closing the meeting</label>
+              {brief.theAsk}
+            </div>
+            <div className="brief-meta">
+              Generated {new Date(brief.generatedAt).toLocaleTimeString()} · {brief.source === "cached" ? "cached intelligence" : brief.source}
+              <button className="insight-more" style={{ marginLeft: 12, padding: 0 }} onClick={onRegenerate}>↻ Regenerate</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const sentimentColor = {
   positive: "#15803d",
   warm: "#d97706",
@@ -243,6 +300,9 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
   const [analysis, setAnalysis] = useState(null);
   const [tab, setTab] = useState("intelligence");
   const [factorModal, setFactorModal] = useState(null); // null | "likelihood" | "close"
+  const [briefOpen, setBriefOpen] = useState(false);
+  const [brief, setBrief] = useState(target.meetingBrief || null);
+  const [briefLoading, setBriefLoading] = useState(false);
   const [draftOpen, setDraftOpen] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [executedActions, setExecutedActions] = useState([]);
@@ -346,6 +406,19 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
     setExecuting(false);
   }
 
+  async function openBrief(regenerate = false) {
+    setBriefOpen(true);
+    if (brief && !regenerate) return;
+    setBriefLoading(true);
+    try {
+      const result = await generateBrief(target.id);
+      setBrief(result.brief);
+      patchTarget(target.id, { meetingBrief: result.brief });
+    } finally {
+      setBriefLoading(false);
+    }
+  }
+
   const [relLead] = analysis ? splitLead(analysis.relationshipRead.summary) : [""];
   const [archLead, archRest] = analysis ? splitLead(analysis.archetype.whatToExpect) : ["", null];
 
@@ -362,7 +435,20 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
           <div className="wr-owner-name">{target.owner.name}, {target.owner.age}</div>
           <div className="wr-owner-sub">{target.owner.title} · {target.owner.tenure} yrs · {target.location}</div>
         </div>
+        <button className="brief-btn" onClick={() => openBrief(false)} title="One-page pre-meeting brief for the next touch">
+          Prep brief
+        </button>
       </div>
+
+      {briefOpen && (
+        <BriefModal
+          target={target}
+          brief={brief}
+          loading={briefLoading}
+          onClose={() => setBriefOpen(false)}
+          onRegenerate={() => openBrief(true)}
+        />
+      )}
 
       {factorModal && (
         <FactorModal target={target} analysis={analysis} mode={factorModal} onClose={() => setFactorModal(null)} />
