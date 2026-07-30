@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useAnimatedNumber } from "../hooks.js";
 import CompanyLogo from "./CompanyLogo.jsx";
+import { DueBadge } from "./MyDay.jsx";
 
 function scoreTone(v) {
   if (v >= 70) return "hot";
@@ -17,6 +18,7 @@ const COLUMNS = [
   { key: "rank", label: "#", get: (t) => -t.scores.likelihood },
   { key: "company", label: "Account", get: (t) => t.company },
   { key: "stage", label: "Stage", get: (t) => t.details?.stage || t.stage },
+  { key: "nexttouch", label: "Next Touch", get: (t) => t.nextTouch?.due || "9999" },
   { key: "owner", label: "Owner", get: (t) => t.owner.name },
   { key: "revenue", label: "Revenue", get: (t) => t.financials.revenue },
   { key: "ebitda", label: "EBITDA %", get: (t) => t.financials.ebitdaMargin },
@@ -132,6 +134,16 @@ export default function Board({ targets, sweepStatus, tasks, onOpen }) {
                     </div>
                   </td>
                   <td className="cell-dim">{t.details?.stage || t.stage}</td>
+                  <td className="cell-touch" title={t.nextTouch ? `${t.nextTouch.action} — ${t.nextTouch.reason}` : undefined}>
+                    {t.nextTouch ? (
+                      <>
+                        <DueBadge due={t.nextTouch.due} />
+                        <div className="cell-touch-action">{t.nextTouch.action}</div>
+                      </>
+                    ) : (
+                      <span className="muted">—</span>
+                    )}
+                  </td>
                   <td className="cell-dim">{t.owner.name}</td>
                   <td className="cell-num">${t.financials.revenue.toFixed(1)}M</td>
                   <td className="cell-num">{t.financials.ebitdaMargin}%</td>

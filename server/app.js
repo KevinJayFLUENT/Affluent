@@ -1,7 +1,7 @@
 import express from "express";
 import { PATTERN_LIBRARY } from "./data/targets.js";
 import { state, getTarget, rankedTargets, applyAction, markEnriched, resetState } from "./state.js";
-import { analyzeTarget, rescoreAfterAction, aiAvailable } from "./claude.js";
+import { analyzeTarget, rescoreAfterAction, writeDigest, aiAvailable } from "./claude.js";
 import { computeConversationSignals, conversationSummaryLine } from "./conversation.js";
 
 const withConversation = (t) => ({ ...t, conversationSignals: computeConversationSignals(t) });
@@ -17,8 +17,69 @@ app.get("/api/targets", (req, res) => {
     targets: rankedTargets().map(withConversation),
     log: state.log,
     tasks: state.tasks,
+    digest: state.digest || null,
     ai: aiAvailable(),
   });
+});
+
+// ── Task done-toggle (My Day) ────────────────────────────────────────────
+app.post("/api/task", (req, res) => {
+  const task = state.tasks.find((t) => t.id === req.body?.taskId);
+  if (!task) return res.status(404).json({ error: "unknown task" });
+  task.done = Boolean(req.body?.done);
+  res.json({ ok: true, task });
+});
+
+// ── Weekly portfolio sweep digest ────────────────────────────────────────
+app.post("/api/digest", async (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const snapshot = state.targets.map((t) => ({
+    company: t.company,
+    stage: t.stage,
+    scores: t.scores,
+    nextTouch: t.nextTouch,
+    catalyst: t.signals.some((s) => s.catalyst),
+    daysSinceLastActivity: t.activity.length
+      ? Math.round((Date.now() - new Date(t.activity[t.activity.length - 1].date)) / 86400000)
+      : null,
+    openBlockers: t.blockers.filter((b) => b.status === "blocked" || b.status === "pending").length,
+  }));
+
+  const dueSoon = state.targets.filter((t) => t.nextTouch && t.nextTouch.due <= today);
+  const catalysts = state.targets.filter((t) => t.signals.some((s) => s.catalyst));
+  const top = rankedTargets()[0];
+
+  let digest = null;
+  if (aiAvailable()) {
+    try {
+      digest = await writeDigest({ today, accounts: snapshot }, PATTERN_LIBRARY);
+      digest.source = "claude-opus-5";
+    } catch (err) {
+      console.error("digest fallback:", err.message);
+    }
+  }
+  if (!digest) {
+    digest = {
+      headline: `${catalysts.length} catalyst${catalysts.length === 1 ? "" : "s"} active · ${dueSoon.length} touch${dueSoon.length === 1 ? "" : "es"} due or overdue`,
+      brief:
+        `Swept ${state.targets.length} accounts. ${top.company} leads the board at ${top.scores.likelihood} likelihood` +
+        `${catalysts.length ? ` with an active catalyst — the dead-deal-revival window is open and cooling` : ""}. ` +
+        (dueSoon.length
+          ? `${dueSoon.map((t) => t.company).join(" and ")} ${dueSoon.length === 1 ? "has" : "have"} touches at or past their prescribed date — silence past the date is how deals die quietly. `
+          : "No touches are overdue. ") +
+        `The rest of the book is on archetype cadence: dates are set, drafts are staged, nothing needs forcing.`,
+      priorities: [
+        ...dueSoon.map((t) => `${t.company}: ${t.nextTouch.action}`),
+        ...(catalysts.length && !dueSoon.some((t) => t.id === catalysts[0].id)
+          ? [`${catalysts[0].company}: act on the catalyst before a rival reads the same news`]
+          : []),
+      ].slice(0, 4),
+      source: "cached",
+    };
+  }
+  digest.generatedAt = new Date().toISOString();
+  state.digest = digest;
+  res.json({ digest });
 });
 
 // ── Enrichment sweep (one target) ────────────────────────────────────────
@@ -201,6 +262,7 @@ app.post("/api/simulate", (req, res) => {
   target.replySimulated = true;
   target.predictionOutcome = sim.predictionCheck;
   target.recommendedOverride = sim.nextRecommendedAction;
+  if (sim.nextTouch) target.nextTouch = { ...sim.nextTouch };
 
   const logEntry = {
     id: `log-${Date.now()}`,

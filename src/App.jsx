@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { fetchTargets, enrichTarget } from "./api.js";
+import { fetchTargets, enrichTarget, toggleTask, runDigest } from "./api.js";
 import Board from "./components/Board.jsx";
 import WarRoom from "./components/WarRoom.jsx";
+import MyDay from "./components/MyDay.jsx";
 import Logo from "./components/Logo.jsx";
+
+const TODAY = new Date().toISOString().slice(0, 10);
 
 export default function App() {
   const [targets, setTargets] = useState([]);
@@ -12,6 +15,8 @@ export default function App() {
   const [view, setView] = useState({ name: "board" });
   const [sweepStatus, setSweepStatus] = useState("idle"); // idle | running | done
   const [toast, setToast] = useState(null);
+  const [digest, setDigest] = useState(null);
+  const [digestRunning, setDigestRunning] = useState(false);
   const sweepStarted = useRef(false);
 
   useEffect(() => {
@@ -21,6 +26,7 @@ export default function App() {
       setAiLive(data.ai);
       setTasks(data.tasks);
       setLog(data.log);
+      setDigest(data.digest);
       if (!sweepStarted.current) {
         sweepStarted.current = true;
         runSweep(data.targets);
@@ -59,7 +65,24 @@ export default function App() {
     setTimeout(() => setToast(null), 5200);
   }
 
+  async function handleToggleTask(taskId, done) {
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, done } : t)));
+    await toggleTask(taskId, done);
+  }
+
+  async function handleRunDigest() {
+    setDigestRunning(true);
+    try {
+      const result = await runDigest();
+      setDigest(result.digest);
+    } finally {
+      setDigestRunning(false);
+    }
+  }
+
   const active = view.name === "warroom" ? targets.find((t) => t.id === view.targetId) : null;
+  const dueCount = targets.filter((t) => t.nextTouch && t.nextTouch.due <= TODAY).length;
+  const openTaskCount = tasks.filter((t) => !t.done).length;
 
   return (
     <div className="app">
@@ -69,6 +92,21 @@ export default function App() {
           <span className="brand-name">TCAN</span>
           <span className="brand-sub">EXPRESS</span>
         </div>
+        <nav className="main-nav">
+          <button
+            className={`nav-link ${view.name === "board" ? "active" : ""}`}
+            onClick={() => setView({ name: "board" })}
+          >
+            Accounts
+          </button>
+          <button
+            className={`nav-link ${view.name === "myday" ? "active" : ""}`}
+            onClick={() => setView({ name: "myday" })}
+          >
+            My Day
+            {dueCount + openTaskCount > 0 && <span className="nav-badge">{dueCount + openTaskCount}</span>}
+          </button>
+        </nav>
         <div className="topbar-right">
           <span className={`ai-pill ${aiLive ? "live" : ""}`}>
             <span className="dot" />
@@ -95,6 +133,18 @@ export default function App() {
           tasks={tasks}
           log={log}
           onOpen={(id) => setView({ name: "warroom", targetId: id })}
+        />
+      )}
+
+      {view.name === "myday" && (
+        <MyDay
+          targets={targets}
+          tasks={tasks}
+          digest={digest}
+          digestRunning={digestRunning}
+          onOpen={(id) => setView({ name: "warroom", targetId: id })}
+          onToggleTask={handleToggleTask}
+          onRunDigest={handleRunDigest}
         />
       )}
 

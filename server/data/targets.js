@@ -15,6 +15,7 @@ export function seedTargets() {
   return [
     {
       id: "vantage",
+      nextTouch: {"due":"2026-07-30","action":"Send catalyst re-engagement to Ray Delgado","reason":"Catalyst is 5 weeks old and cooling — dead-deal-revival window is now."},
       company: "Vantage Permit Systems",
       vertical: "Municipal permitting & licensing software",
       location: "Boise, ID",
@@ -167,6 +168,7 @@ export function seedTargets() {
           artifact: "Reply within 24h (short, warm, zero price talk). Propose Thursday or Friday at his office, alone — no bankers, no deck. Agenda he set: structure, not number. Prep: earnout mechanics in plain English, 3 team-retention references, portal-cancellation one-pager.",
         },
         nextTask: "Reply to Ray within 24h and confirm Boise for Thu/Fri. Do NOT include a valuation number — he set the agenda: structure, in person.",
+        nextTouch: { due: "2026-08-11", action: "Reply to Ray + lock the Boise visit", reason: "He opened the door himself — 48h window before it feels ignored." },
       },
       // 38 touches / 4 reps / 4.5 years — Salesforce-style subjects, with full
       // mock email bodies on the touches that matter.
@@ -326,6 +328,7 @@ export function seedTargets() {
     // ───────────────────── PE-backed, exit clock (early dialogue) ─────────────────────
     {
       id: "novaris",
+      nextTouch: {"due":"2026-10-15","action":"Pre-emptive call with Copper Gate ops partner","reason":"Window set by the sponsor himself: after Q3 marks land."},
       company: "Novaris Health Scheduling",
       vertical: "Clinic & therapy scheduling software",
       location: "Minneapolis, MN",
@@ -411,6 +414,7 @@ export function seedTargets() {
     // ───────────────────── Warm inbound referral (succession) ─────────────────────
     {
       id: "merritt",
+      nextTouch: {"due":"2026-07-29","action":"Unstick the NDA at Ray Hutchins (his counsel)","reason":"3+ weeks in legal review — momentum quietly dying. OVERDUE."},
       company: "Merritt Fuel Systems",
       vertical: "Back-office software for fuel jobbers",
       location: "Tulsa, OK",
@@ -501,6 +505,7 @@ export function seedTargets() {
     // ───────────────────── Polite deflector ("ask me next year") ─────────────────────
     {
       id: "solenta",
+      nextTouch: {"due":"2026-09-16","action":"Send the anniversary note — his date, to the day","reason":"Date-setter pattern: converts only when you keep the exact date."},
       company: "Solenta Labs",
       vertical: "LIMS for water & environmental testing labs",
       location: "Madison, WI",
@@ -587,6 +592,7 @@ export function seedTargets() {
     // ───────────────────── Old-school seller ─────────────────────
     {
       id: "hartline",
+      nextTouch: {"due":"2026-08-11","action":"Erie shop visit — he has asked twice","reason":"Old-school seller: only in-person counts. Two rivals still dialing."},
       company: "Hartline Foundry Systems",
       vertical: "ERP for metal casting & foundry shops",
       location: "Erie, PA",
@@ -668,6 +674,7 @@ export function seedTargets() {
     // ───────────────────── Fresh cold target ─────────────────────
     {
       id: "plexa",
+      nextTouch: {"due":"2026-09-08","action":"Founder intro before Dockside Expo","reason":"Relationship-first seed; conference is the natural first touch."},
       company: "Plexa Marina Management",
       vertical: "Marina & boatyard management SaaS",
       location: "Annapolis, MD",

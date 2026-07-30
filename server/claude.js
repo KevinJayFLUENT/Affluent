@@ -144,6 +144,38 @@ export async function analyzeTarget(target, patternLibrary, conversationSignals 
   return extractJson(response);
 }
 
+const DIGEST_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["headline", "brief", "priorities"],
+  properties: {
+    headline: { type: "string" },
+    brief: { type: "string" },
+    priorities: { type: "array", items: { type: "string" } },
+  },
+};
+
+// Weekly portfolio sweep digest. Throws on failure; caller builds a
+// deterministic fallback from the same stats.
+export async function writeDigest(portfolio, patternLibrary) {
+  const response = await createWithFallbackModels({
+    model: MODEL,
+    max_tokens: 1200,
+    output_config: {
+      effort: "low",
+      format: { type: "json_schema", schema: DIGEST_SCHEMA },
+    },
+    system:
+      "You are the intelligence engine of TCan Express, an M&A CRM. Write the weekly portfolio sweep digest for Kevin Jay (Corp Dev deal lead). " +
+      "Input: a compact snapshot of every account. Output: headline (one punchy line, e.g. '1 catalyst burning, 2 touches overdue'), " +
+      "brief (3-5 sentences: what changed, what's warming, what's at risk of dying quietly — cite companies and numbers), " +
+      "priorities (3-4 imperative one-liners, most urgent first, each naming the company and the move). " +
+      "Be concrete and direct; no filler. Reference pattern-library analogs where they sharpen the point.\n\n" + patternLibrary,
+    messages: [{ role: "user", content: JSON.stringify(portfolio) }],
+  });
+  return extractJson(response);
+}
+
 const ACT_SCHEMA = {
   type: "object",
   additionalProperties: false,

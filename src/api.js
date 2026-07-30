@@ -21,6 +21,20 @@ export async function simulateReply(targetId) {
   return res.json();
 }
 
+export async function toggleTask(taskId, done) {
+  const res = await fetch("/api/task", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ taskId, done }),
+  });
+  return res.json();
+}
+
+export async function runDigest() {
+  const res = await fetch("/api/digest", { method: "POST" });
+  return res.json();
+}
+
 export async function executeAction(payload) {
   const res = await fetch("/api/act", {
     method: "POST",
