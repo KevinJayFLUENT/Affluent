@@ -238,6 +238,12 @@ app.post("/api/simulate", (req, res) => {
 app.get("/api/aicheck", async (req, res) => {
   if (!aiAvailable()) return res.json({ ok: false, error: "no ANTHROPIC_API_KEY in env" });
   try {
+    if (req.query.full) {
+      // Replicate the real analyze call end-to-end on the smallest target.
+      const target = getTarget("plexa");
+      const analysis = await analyzeTarget(target, PATTERN_LIBRARY, []);
+      return res.json({ ok: true, mode: "full-analyze", archetype: analysis?.archetype?.label });
+    }
     const { default: Anthropic } = await import("@anthropic-ai/sdk");
     const client = new Anthropic();
     const r = await client.messages.create({
@@ -247,7 +253,12 @@ app.get("/api/aicheck", async (req, res) => {
     });
     res.json({ ok: true, reply: r.content.find((b) => b.type === "text")?.text, model: r.model });
   } catch (err) {
-    res.json({ ok: false, status: err?.status, error: String(err?.message || err).slice(0, 500) });
+    res.json({
+      ok: false,
+      status: err?.status,
+      error: String(err?.message || err).slice(0, 800),
+      type: err?.error?.error?.type,
+    });
   }
 });
 
