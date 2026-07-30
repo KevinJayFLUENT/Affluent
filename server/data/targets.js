@@ -129,6 +129,45 @@ export function seedTargets() {
           detail: "Ray updated his profile Jul 2026 and liked two posts on founder retirement.",
         },
       ],
+      // Scripted demo event: after the re-engagement note is approved, the
+      // predicted reply can be simulated ("11 days later"). This is the
+      // payoff moment — the archetype's prediction coming true on screen.
+      simulatedReply: {
+        requiresAction: "act-reengage",
+        daysLater: 11,
+        effects: { likelihood: +8, close: +18, resolveBlockerId: "b1" },
+        reply: {
+          date: "2026-08-10",
+          rep: "Ray Delgado",
+          type: "email",
+          direction: "in",
+          subject: "[In] Re: The portal cancellation — and what it means for Vantage",
+          sentiment: "warm",
+          note: "FIRST REPLY IN 10 MONTHS — 11 days after the re-engagement note, sent 5:42 AM.",
+          body: "Kevin,\n\nSaw the portal news the day it broke. Wondered who'd bring it up first.\n\nNo bankers. If you're serious, come to Boise — come by the office. Bring the structure conversation, not the number. We both know where the number conversation got us last time.\n\nRay\n\nSent 5:42 AM",
+        },
+        predictionCheck: [
+          { predicted: "~2 weeks of silence, then engagement on his terms", actual: "Replied after 11 days, unprompted", hit: true },
+          { predicted: "Counter on structure, not price", actual: "'Bring the structure conversation, not the number'", hit: true },
+          { predicted: "Short reply or call at an odd hour", actual: "Four sentences, sent 5:42 AM", hit: true },
+          { predicted: "Site visit within 3 weeks of first reply (deal-twin pattern)", actual: "He invited us to Boise himself", hit: true },
+        ],
+        traceLines: [
+          "Inbound detected: Ray Delgado replied — first contact in 10 months",
+          "Checking against archetype prediction (Silent Founder, post-burn)…",
+          "Prediction confirmed: silence ~2 weeks ✓ · structure-not-price ✓ · odd-hour reply ✓",
+          "Re-scoring on confirmed re-engagement",
+          "Blocker resolved: contact re-established → face-to-face window is OPEN",
+        ],
+        nextRecommendedAction: {
+          actionId: "act-visit",
+          title: "Book the Boise visit — he opened the door, walk through it inside 48h",
+          rationale: "Deal-twin pattern: every closed silent-founder deal included a site visit within 3 weeks of first reply. He asked for the structure conversation in person — that's the meeting where this deal gets made. No valuation numbers on this trip.",
+          artifactType: "task",
+          artifact: "Reply within 24h (short, warm, zero price talk). Propose Thursday or Friday at his office, alone — no bankers, no deck. Agenda he set: structure, not number. Prep: earnout mechanics in plain English, 3 team-retention references, portal-cancellation one-pager.",
+        },
+        nextTask: "Reply to Ray within 24h and confirm Boise for Thu/Fri. Do NOT include a valuation number — he set the agenda: structure, in person.",
+      },
       // 38 touches / 4 reps / 4.5 years — Salesforce-style subjects, with full
       // mock email bodies on the touches that matter.
       activity: [

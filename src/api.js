@@ -12,6 +12,15 @@ export async function enrichTarget(targetId) {
   return res.json();
 }
 
+export async function simulateReply(targetId) {
+  const res = await fetch("/api/simulate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ targetId }),
+  });
+  return res.json();
+}
+
 export async function executeAction(payload) {
   const res = await fetch("/api/act", {
     method: "POST",

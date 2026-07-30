@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { analyzeTarget, executeAction } from "../api.js";
+import { analyzeTarget, executeAction, simulateReply } from "../api.js";
 import { useAnimatedNumber } from "../hooks.js";
 import AccountDetails from "./AccountDetails.jsx";
 import CompanyLogo from "./CompanyLogo.jsx";
@@ -86,8 +86,10 @@ function Factor({ s, conv }) {
   );
 }
 
+const isOpenBlocker = (b) => b.status === "blocked" || b.status === "pending";
+
 function FactorModal({ target, analysis, mode, onClose }) {
-  const openBlockers = target.blockers.filter((b) => b.status !== "in-motion");
+  const openBlockers = target.blockers.filter(isOpenBlocker);
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -105,20 +107,23 @@ function FactorModal({ target, analysis, mode, onClose }) {
             </p>
             <div className="factor-group-title">Path-to-transact items and their weight</div>
             <div className="factors">
-              {target.blockers.map((b) => (
-                <div key={b.id} className={`factor ${b.status === "in-motion" ? "" : "factor-conv"}`} title={b.detail}>
-                  <div className="factor-top">
-                    <span className="factor-label">{b.label}</span>
-                    <span className={`factor-contrib ${b.status === "in-motion" ? "pos" : "neg"}`}>
-                      {b.status === "in-motion" ? `+${b.closeWeight || 0} applied` : `+${b.closeWeight || 0} if resolved`}
-                    </span>
+              {target.blockers.map((b) => {
+                const applied = b.status === "in-motion" || b.status === "resolved";
+                return (
+                  <div key={b.id} className={`factor ${applied ? "" : "factor-conv"}`} title={b.detail}>
+                    <div className="factor-top">
+                      <span className="factor-label">{b.label}</span>
+                      <span className={`factor-contrib ${applied ? "pos" : "neg"}`}>
+                        {applied ? `+${b.closeWeight || 0} applied` : `+${b.closeWeight || 0} if resolved`}
+                      </span>
+                    </div>
+                    <div className="factor-value">{b.detail}</div>
+                    <div className="factor-src">
+                      status: {b.status === "in-motion" ? "in motion — already reflected in the score" : b.status}
+                    </div>
                   </div>
-                  <div className="factor-value">{b.detail}</div>
-                  <div className="factor-src">
-                    status: {b.status === "in-motion" ? "in motion — already reflected in the score" : b.status}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         ) : (
@@ -239,10 +244,54 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
     setExecuting(false);
   }
 
-  const blockedCount = target.blockers.filter((b) => b.status !== "in-motion").length;
+  const blockedCount = target.blockers.filter(isOpenBlocker).length;
   const primaryBlocker = target.blockers.find(
-    (b) => b.status !== "in-motion" && b.action && !executedActions.includes(b.action.id)
+    (b) => isOpenBlocker(b) && b.action && !executedActions.includes(b.action.id)
   );
+
+  // Scripted demo event: available once the prerequisite action is in motion.
+  const sim = target.simulatedReply;
+  const simPrereq = sim && target.blockers.find((b) => b.action?.id === sim.requiresAction);
+  const simAvailable = sim && !target.replySimulated && simPrereq && simPrereq.status === "in-motion";
+
+  // After the reply, the server prescribes the next play (e.g. book the visit).
+  const override = target.recommendedOverride;
+  const overrideBlocker =
+    override &&
+    target.blockers.find(
+      (b) => b.action?.id === override.actionId && isOpenBlocker(b) && !executedActions.includes(b.action.id)
+    );
+
+  async function simulate() {
+    if (executing) return;
+    setExecuting(true);
+    const result = await simulateReply(target.id);
+    if (result.error) { setExecuting(false); return; }
+    setTrace((prev) => [...prev, `— ${sim.daysLater} days later —`]);
+    for (const line of result.traceLines) {
+      setTrace((prev) => [...prev, line]);
+      await sleep(600);
+    }
+    patchTarget(target.id, {
+      scores: result.after,
+      activity: [...target.activity, result.reply],
+      blockers: target.blockers.map((b) =>
+        b.id === result.resolvedBlockerId ? { ...b, status: "resolved" } : b
+      ),
+      replySimulated: true,
+      predictionOutcome: result.predictionCheck,
+      recommendedOverride: result.recommendedOverride,
+    });
+    setRescoreNote(
+      `Reply received ${sim.daysLater} days after outreach — archetype prediction confirmed. Likelihood ${result.before.likelihood}→${result.after.likelihood}, close ${result.before.close}→${result.after.close}.`
+    );
+    setTrace((prev) => [
+      ...prev,
+      `Likelihood ${result.before.likelihood} → ${result.after.likelihood} · Close ${result.before.close} → ${result.after.close}`,
+    ]);
+    onActionExecuted(result);
+    setExecuting(false);
+  }
 
   const [relLead] = analysis ? splitLead(analysis.relationshipRead.summary) : [""];
   const [archLead, archRest] = analysis ? splitLead(analysis.archetype.whatToExpect) : ["", null];
@@ -288,6 +337,18 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
           </div>
           {rescoreNote && <div className="rescore-note">↑ {rescoreNote}</div>}
 
+          {simAvailable && (
+            <div className="demo-sim">
+              <div>
+                <div className="demo-sim-title">Demo control</div>
+                <div className="demo-sim-text">Advance the clock and play the predicted reply.</div>
+              </div>
+              <button className="demo-sim-btn" disabled={executing} onClick={simulate}>
+                ⏩ {sim.daysLater} days later
+              </button>
+            </div>
+          )}
+
           <Panel title="Activity" tag={`${target.activity.length} touches · all logged`}>
             <div className="timeline">
               {(() => {
@@ -332,8 +393,46 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
                 </div>
               )}
 
+              {/* 0. The payoff: prediction vs. reality (after simulated reply) */}
+              {target.predictionOutcome && (
+                <Panel title="Prediction vs. Reality" tag="archetype confirmed" tone="catalyst">
+                  <div className="pred-rows">
+                    {target.predictionOutcome.map((p, i) => (
+                      <div key={i} className="pred-row">
+                        <span className="pred-hit">{p.hit ? "✓" : "✗"}</span>
+                        <div>
+                          <div className="pred-predicted">{p.predicted}</div>
+                          <div className="pred-actual">{p.actual}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Panel>
+              )}
+
               {/* 1. The point: what to do next */}
-              {analysis && primaryBlocker && (
+              {analysis && override && overrideBlocker && (
+                <Panel title="Next Best Action" tag="review & approve" tone="action">
+                  <div className="action-title">{override.title}</div>
+                  <p>{override.rationale}</p>
+                  <button className="insight-more" onClick={() => setDraftOpen(!draftOpen)}>
+                    {draftOpen ? "▴ Hide plan" : "▾ View plan"}
+                  </button>
+                  {draftOpen && <pre className="artifact">{override.artifact}</pre>}
+                  <div className="action-buttons">
+                    <button
+                      className="approve-btn"
+                      disabled={executing}
+                      onClick={() => approve(overrideBlocker.action, override.artifact)}
+                    >
+                      {executing ? "Executing…" : "✓ Review & Approve"}
+                    </button>
+                    <span className="action-note">Simulated send · state changes are real</span>
+                  </div>
+                </Panel>
+              )}
+
+              {analysis && !(override && overrideBlocker) && primaryBlocker && (
                 <Panel title="Next Best Action" tag="review & approve" tone="action">
                   <div className="action-title">{analysis.recommendedAction.title}</div>
                   <p>{analysis.recommendedAction.rationale}</p>
@@ -354,7 +453,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
                 </Panel>
               )}
 
-              {analysis && !primaryBlocker && (
+              {analysis && !primaryBlocker && !(override && overrideBlocker) && (
                 <Panel title="Next Best Action" tone="action">
                   <p className="muted">All actions are in motion. Agent is monitoring for the reply window — next check-in task is on the board.</p>
                 </Panel>
@@ -373,10 +472,10 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
                             <div className="blocker-detail">{b.detail}</div>
                           </div>
                           <span className={`status-pill ${b.status}`}>
-                            {b.status === "in-motion" ? "In Motion" : b.status === "blocked" ? "Blocked" : "Pending"}
+                            {b.status === "in-motion" ? "In Motion" : b.status === "resolved" ? "Resolved" : b.status === "blocked" ? "Blocked" : "Pending"}
                           </span>
                         </div>
-                        {b.action && b.status !== "in-motion" && !executedActions.includes(b.action.id) && (
+                        {b.action && isOpenBlocker(b) && !executedActions.includes(b.action.id) && (
                           <button className="blocker-action" disabled={executing} onClick={() => approve(b.action, null)}>
                             ▸ {b.action.label}
                           </button>

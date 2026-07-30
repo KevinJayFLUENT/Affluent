@@ -177,6 +177,64 @@ app.post("/api/act", async (req, res) => {
   });
 });
 
+// ── Simulated inbound reply (scripted demo event) ───────────────────────
+// Fires the target's predicted reply after its prerequisite action ran.
+// The prediction coming true on screen is the payoff of the demo.
+app.post("/api/simulate", (req, res) => {
+  const target = getTarget(req.body?.targetId);
+  const sim = target?.simulatedReply;
+  if (!target || !sim) return res.status(404).json({ error: "no simulated event for target" });
+  if (target.replySimulated) return res.status(400).json({ error: "already simulated" });
+
+  const prereq = target.blockers.find((b) => b.action?.id === sim.requiresAction);
+  if (prereq && prereq.status !== "in-motion") {
+    return res.status(400).json({ error: "prerequisite action not yet executed" });
+  }
+
+  const before = { ...target.scores };
+  target.scores.likelihood = Math.min(99, target.scores.likelihood + sim.effects.likelihood);
+  target.scores.close = Math.min(99, target.scores.close + sim.effects.close);
+
+  const resolved = target.blockers.find((b) => b.id === sim.effects.resolveBlockerId);
+  if (resolved) resolved.status = "resolved";
+
+  target.activity.push(sim.reply);
+  target.replySimulated = true;
+  target.predictionOutcome = sim.predictionCheck;
+  target.recommendedOverride = sim.nextRecommendedAction;
+
+  const logEntry = {
+    id: `log-${Date.now()}`,
+    date: new Date().toISOString(),
+    targetId: target.id,
+    company: target.company,
+    text: `Inbound reply from ${target.owner.name} — archetype prediction confirmed`,
+    detail: sim.reply.note,
+  };
+  state.log.unshift(logEntry);
+
+  const task = {
+    id: `task-${Date.now()}`,
+    targetId: target.id,
+    company: target.company,
+    text: sim.nextTask,
+    done: false,
+  };
+  state.tasks.unshift(task);
+
+  res.json({
+    before,
+    after: { ...target.scores },
+    reply: sim.reply,
+    predictionCheck: sim.predictionCheck,
+    traceLines: sim.traceLines,
+    resolvedBlockerId: resolved?.id,
+    recommendedOverride: sim.nextRecommendedAction,
+    logEntry,
+    task,
+  });
+});
+
 // ── Demo reset (rehearse the 60-second path repeatedly) ─────────────────
 app.post("/api/reset", (req, res) => {
   resetState();
