@@ -234,6 +234,23 @@ app.post("/api/simulate", (req, res) => {
   });
 });
 
+// ── AI diagnostics: tiny live call, returns ok or the real error ─────────
+app.get("/api/aicheck", async (req, res) => {
+  if (!aiAvailable()) return res.json({ ok: false, error: "no ANTHROPIC_API_KEY in env" });
+  try {
+    const { default: Anthropic } = await import("@anthropic-ai/sdk");
+    const client = new Anthropic();
+    const r = await client.messages.create({
+      model: "claude-opus-5",
+      max_tokens: 16,
+      messages: [{ role: "user", content: "Reply with the single word: ok" }],
+    });
+    res.json({ ok: true, reply: r.content.find((b) => b.type === "text")?.text, model: r.model });
+  } catch (err) {
+    res.json({ ok: false, status: err?.status, error: String(err?.message || err).slice(0, 500) });
+  }
+});
+
 // ── Demo reset (rehearse the 60-second path repeatedly) ─────────────────
 app.post("/api/reset", (req, res) => {
   resetState();
