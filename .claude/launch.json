@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fluent-foresight",
+      "runtimeExecutable": "cmd.exe",
+      "runtimeArgs": [
+        "/c",
+        "set PATH=C:\\Users\\KevinJay\\tools\\node;%PATH%&& npm run dev"
+      ],
+      "port": 5173
+    }
+  ]
+}
