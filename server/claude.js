@@ -86,6 +86,7 @@ async function createWithFallbackModels(params) {
 
 function extractJson(response) {
   if (response.stop_reason === "refusal") throw new Error("Model refused request");
+  if (response.stop_reason === "max_tokens") throw new Error("Response truncated at max_tokens");
   const text = response.content.find((b) => b.type === "text")?.text;
   if (!text) throw new Error("No text block in response");
   return JSON.parse(text);
@@ -96,8 +97,9 @@ function extractJson(response) {
 export async function analyzeTarget(target, patternLibrary, conversationSignals = []) {
   const response = await createWithFallbackModels({
     model: MODEL,
-    // Kept tight so the live call lands well inside serverless limits.
-    max_tokens: 3000,
+    // Headroom so the JSON never truncates; concision is enforced in the
+    // prompt instead (truncated JSON fails parsing and wastes the call).
+    max_tokens: 6000,
     output_config: {
       effort: "low",
       format: { type: "json_schema", schema: ANALYSIS_SCHEMA },
@@ -108,6 +110,7 @@ export async function analyzeTarget(target, patternLibrary, conversationSignals 
       "The conversationIndicators were computed from the logged email/call history (reply rate, inbound recency, reconnect campaigns, escalation depth, sentiment trajectory, silence pattern) — treat them as primary evidence for likelihood-to-transact and reference the specific numbers. " +
       "Every prediction must cite the matching historical analog from the pattern library (in the dealTwin field and woven into whatToExpect). " +
       "Be specific, use names, dates, and numbers from the record. Write like a sharp deal partner briefing a colleague: confident, concrete, no filler. " +
+      "BE CONCISE: narrative fields 1-3 sentences each; whatToExpect and dealTwin max 3 sentences; the artifact complete but tight (an email under 180 words). Total output well under 2500 tokens. " +
       "The recommendedAction.artifact must be a complete, ready-to-send draft (email/memo/task text). " +
       "revivalRadar: only non-null if the record shows a specific external catalyst event; explain why it changes the deal math. " +
       "\n\n" + patternLibrary,
