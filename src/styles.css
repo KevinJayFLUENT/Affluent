@@ -109,6 +109,13 @@ body {
   animation: chipIn 0.4s ease;
 }
 .cell-vertical { color: var(--text-faint); font-size: 11.5px; margin-top: 2px; }
+.company-logo {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px; color: #fff; font-weight: 800; letter-spacing: 0.5px;
+  flex-shrink: 0; box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.15);
+  user-select: none;
+}
+.cell-account { display: flex; gap: 11px; align-items: flex-start; }
 .cell-dim { color: var(--text-dim); }
 .cell-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .row-score { font-weight: 800; font-size: 15px; }

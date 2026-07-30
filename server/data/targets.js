@@ -19,6 +19,7 @@ export function seedTargets() {
       vertical: "Municipal permitting & licensing software",
       location: "Boise, ID",
       hero: true,
+      brand: { color: "#0b5cab", color2: "#032d60", initials: "VP" },
       stage: "Dormant — Run 1 died at APA (Oct 2025)",
       owner: {
         name: "Ray Delgado",

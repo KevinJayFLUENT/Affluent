@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { analyzeTarget, executeAction } from "../api.js";
 import { useAnimatedNumber } from "../hooks.js";
 import AccountDetails from "./AccountDetails.jsx";
+import CompanyLogo from "./CompanyLogo.jsx";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -248,6 +249,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
     <div className="warroom">
       <div className="wr-header">
         <button className="back-btn" onClick={onBack}>← Board</button>
+        <CompanyLogo target={target} size={46} />
         <div className="wr-title">
           <h1>{target.company}</h1>
           <span className="wr-stage">{target.stage}</span>

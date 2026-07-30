@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useAnimatedNumber } from "../hooks.js";
+import CompanyLogo from "./CompanyLogo.jsx";
 
 function scoreTone(v) {
   if (v >= 70) return "hot";
@@ -119,11 +120,16 @@ export default function Board({ targets, sweepStatus, tasks, onOpen }) {
                 >
                   <td className="cell-rank">{rankOf(t)}</td>
                   <td>
-                    <div className="cell-company">
-                      {t.company}
-                      {hasCatalyst && <span className="catalyst-tag">⚡ Catalyst</span>}
+                    <div className="cell-account">
+                      <CompanyLogo target={t} size={34} />
+                      <div>
+                        <div className="cell-company">
+                          {t.company}
+                          {hasCatalyst && <span className="catalyst-tag">⚡ Catalyst</span>}
+                        </div>
+                        <div className="cell-vertical">{t.vertical}</div>
+                      </div>
                     </div>
-                    <div className="cell-vertical">{t.vertical}</div>
                   </td>
                   <td className="cell-dim">{t.details?.stage || t.stage}</td>
                   <td className="cell-dim">{t.owner.name}</td>
