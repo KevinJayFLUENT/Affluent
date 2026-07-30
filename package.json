@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "concurrently -k -n api,web -c blue,magenta \"node --env-file-if-exists=.env server/index.js\" \"vite\"",
     "server": "node --env-file-if-exists=.env server/index.js",
-    "web": "vite"
+    "web": "vite",
+    "build": "vite build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
