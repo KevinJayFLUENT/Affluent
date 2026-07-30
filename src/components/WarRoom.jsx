@@ -85,31 +85,62 @@ function Factor({ s, conv }) {
   );
 }
 
-function FactorModal({ target, analysis, onClose }) {
+function FactorModal({ target, analysis, mode, onClose }) {
+  const openBlockers = target.blockers.filter((b) => b.status !== "in-motion");
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
-          <h2>Likelihood to Transact — Factor Breakdown</h2>
+          <h2>{mode === "close" ? "Close Probability — Blocker Breakdown" : "Likelihood to Transact — Factor Breakdown"}</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
-        {analysis && <p className="modal-narrative">{analysis.likelihoodNarrative}</p>}
-        <div className="modal-cols">
-          <div>
-            <div className="factor-group-title">
-              Conversation indicators — read from {target.activity.length} logged interactions
-            </div>
+
+        {mode === "close" ? (
+          <>
+            <p className="modal-narrative">
+              Close probability sits at {target.scores.close} because {openBlockers.length} of {target.blockers.length} path-to-transact
+              items are still open. Each item below shows what putting it in motion adds. Resolving all of them would lift close
+              probability by +{openBlockers.reduce((s, b) => s + (b.closeWeight || 0), 0)} points — the rest is execution and the seller's timeline.
+            </p>
+            <div className="factor-group-title">Path-to-transact items and their weight</div>
             <div className="factors">
-              {(target.conversationSignals || []).map((s) => <Factor key={s.id} s={s} conv />)}
+              {target.blockers.map((b) => (
+                <div key={b.id} className={`factor ${b.status === "in-motion" ? "" : "factor-conv"}`} title={b.detail}>
+                  <div className="factor-top">
+                    <span className="factor-label">{b.label}</span>
+                    <span className={`factor-contrib ${b.status === "in-motion" ? "pos" : "neg"}`}>
+                      {b.status === "in-motion" ? `+${b.closeWeight || 0} applied` : `+${b.closeWeight || 0} if resolved`}
+                    </span>
+                  </div>
+                  <div className="factor-value">{b.detail}</div>
+                  <div className="factor-src">
+                    status: {b.status === "in-motion" ? "in motion — already reflected in the score" : b.status}
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-          <div>
-            <div className="factor-group-title">Enrichment signals — sweep deltas</div>
-            <div className="factors">
-              {target.enriched ? target.signals.map((s) => <Factor key={s.id} s={s} />) : <div className="muted">Awaiting enrichment sweep…</div>}
+          </>
+        ) : (
+          <>
+            {analysis && <p className="modal-narrative">{analysis.likelihoodNarrative}</p>}
+            <div className="modal-cols">
+              <div>
+                <div className="factor-group-title">
+                  Conversation indicators — read from {target.activity.length} logged interactions
+                </div>
+                <div className="factors">
+                  {(target.conversationSignals || []).map((s) => <Factor key={s.id} s={s} conv />)}
+                </div>
+              </div>
+              <div>
+                <div className="factor-group-title">Enrichment signals — sweep deltas</div>
+                <div className="factors">
+                  {target.enriched ? target.signals.map((s) => <Factor key={s.id} s={s} />) : <div className="muted">Awaiting enrichment sweep…</div>}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -154,7 +185,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
   const [trace, setTrace] = useState([]);
   const [analysis, setAnalysis] = useState(null);
   const [tab, setTab] = useState("intelligence");
-  const [factorsOpen, setFactorsOpen] = useState(false);
+  const [factorModal, setFactorModal] = useState(null); // null | "likelihood" | "close"
   const [draftOpen, setDraftOpen] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [executedActions, setExecutedActions] = useState([]);
@@ -227,7 +258,9 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
         </div>
       </div>
 
-      {factorsOpen && <FactorModal target={target} analysis={analysis} onClose={() => setFactorsOpen(false)} />}
+      {factorModal && (
+        <FactorModal target={target} analysis={analysis} mode={factorModal} onClose={() => setFactorModal(null)} />
+      )}
 
       <div className="wr-grid">
         {/* ── Left: meters + activity ── */}
@@ -238,14 +271,15 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
               value={target.scores.likelihood}
               tone="primary"
               hint="▾ Factor breakdown"
-              onClick={() => setFactorsOpen(true)}
+              onClick={() => setFactorModal("likelihood")}
             />
             <Meter
               label="Close Probability"
               value={target.scores.close}
               tone="secondary"
               sub={`${blockedCount} open blocker${blockedCount === 1 ? "" : "s"}`}
-              onClick={() => setFactorsOpen(true)}
+              hint="▾ Blocker breakdown"
+              onClick={() => setFactorModal("close")}
             />
           </div>
           {rescoreNote && <div className="rescore-note">↑ {rescoreNote}</div>}

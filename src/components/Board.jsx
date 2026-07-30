@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useAnimatedNumber } from "../hooks.js";
 
 function scoreTone(v) {
@@ -7,68 +7,64 @@ function scoreTone(v) {
   return "cool";
 }
 
-function TargetCard({ target, rank, onOpen }) {
-  const likelihood = useAnimatedNumber(target.scores.likelihood, 1100);
-  const hasCatalyst = target.enriched && target.signals.some((s) => s.catalyst);
-
-  return (
-    <div
-      className={`card ${hasCatalyst ? "card-catalyst" : ""}`}
-      onClick={() => onOpen(target.id)}
-    >
-      {hasCatalyst && <div className="catalyst-banner">⚡ Catalyst detected</div>}
-      <div className="card-head">
-        <div>
-          <div className="card-company">{target.company}</div>
-          <div className="card-vertical">{target.vertical}</div>
-        </div>
-        <div className={`card-score ${scoreTone(likelihood)}`}>
-          <div className="card-score-num">{likelihood}</div>
-          <div className="card-score-label">likelihood</div>
-        </div>
-      </div>
-
-      <div className="card-meta">
-        <span>#{rank} · {target.stage}</span>
-      </div>
-
-      <div className="card-fin">
-        <span>${target.financials.revenue.toFixed(1)}M rev</span>
-        <span>{target.financials.ebitdaMargin}% EBITDA</span>
-        <span>{target.financials.arrPct}% ARR</span>
-      </div>
-
-      <div className="chip-row">
-        {target.enriched ? (
-          target.signals.map((s, i) => (
-            <span
-              key={s.id}
-              className={`chip ${s.contribution > 0 ? "chip-pos" : s.contribution < 0 ? "chip-neg" : ""} ${
-                s.catalyst ? "chip-catalyst" : ""
-              }`}
-              style={{ animationDelay: `${i * 140}ms` }}
-              title={s.detail}
-            >
-              {s.label}
-              <b>{s.contribution > 0 ? `+${s.contribution}` : s.contribution || "±0"}</b>
-            </span>
-          ))
-        ) : (
-          <span className="chip chip-scan">scanning…</span>
-        )}
-      </div>
-    </div>
-  );
+function Score({ value }) {
+  const display = useAnimatedNumber(value, 1100);
+  return <span className={`row-score ${scoreTone(display)}`}>{display}</span>;
 }
 
+const COLUMNS = [
+  { key: "rank", label: "#", get: (t) => -t.scores.likelihood },
+  { key: "company", label: "Account", get: (t) => t.company },
+  { key: "stage", label: "Stage", get: (t) => t.details?.stage || t.stage },
+  { key: "owner", label: "Owner", get: (t) => t.owner.name },
+  { key: "revenue", label: "Revenue", get: (t) => t.financials.revenue },
+  { key: "ebitda", label: "EBITDA %", get: (t) => t.financials.ebitdaMargin },
+  { key: "arr", label: "ARR %", get: (t) => t.financials.arrPct },
+  { key: "close", label: "Close", get: (t) => t.scores.close },
+  { key: "likelihood", label: "Likelihood", get: (t) => t.scores.likelihood },
+  { key: "signals", label: "Signals", get: null },
+];
+
 export default function Board({ targets, sweepStatus, tasks, onOpen }) {
-  const ranked = [...targets].sort((a, b) => b.scores.likelihood - a.scores.likelihood);
+  const [sort, setSort] = useState({ key: "rank", dir: 1 });
+  const [query, setQuery] = useState("");
+
+  function toggleSort(col) {
+    if (!col.get) return;
+    setSort((s) => (s.key === col.key ? { key: col.key, dir: -s.dir } : { key: col.key, dir: 1 }));
+  }
+
+  const ranked = useMemo(
+    () => [...targets].sort((a, b) => b.scores.likelihood - a.scores.likelihood),
+    [targets]
+  );
+  const rankOf = (t) => ranked.indexOf(t) + 1;
+
+  const rows = useMemo(() => {
+    const col = COLUMNS.find((c) => c.key === sort.key) || COLUMNS[0];
+    const q = query.trim().toLowerCase();
+    let out = [...targets];
+    if (q) {
+      out = out.filter((t) =>
+        [t.company, t.vertical, t.stage, t.owner.name, t.details?.industry]
+          .filter(Boolean)
+          .some((v) => v.toLowerCase().includes(q))
+      );
+    }
+    out.sort((a, b) => {
+      const av = col.get(a);
+      const bv = col.get(b);
+      const cmp = typeof av === "string" ? av.localeCompare(bv) : av - bv;
+      return cmp * sort.dir;
+    });
+    return out;
+  }, [targets, sort, query]);
 
   return (
     <div className="board">
       <div className="board-header">
         <div>
-          <h1>Core Account · Likelihood to Transact</h1>
+          <h1>Accounts · Likelihood to Transact</h1>
           <p className="board-sub">
             {sweepStatus === "running" && (
               <span className="sweep-live"><span className="dot pulse" /> Agent enrichment sweep running — scanning web, funding, hiring & broker signals…</span>
@@ -85,10 +81,84 @@ export default function Board({ targets, sweepStatus, tasks, onOpen }) {
         )}
       </div>
 
-      <div className="card-grid">
-        {ranked.map((t, i) => (
-          <TargetCard key={t.id} target={t} rank={i + 1} onOpen={onOpen} />
-        ))}
+      <div className="list-toolbar">
+        <input
+          className="list-filter"
+          placeholder="Filter accounts — company, stage, industry, owner…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <span className="list-count">{rows.length} of {targets.length} account{targets.length === 1 ? "" : "s"}</span>
+      </div>
+
+      <div className="list-wrap">
+        <table className="account-table">
+          <thead>
+            <tr>
+              {COLUMNS.map((c) => (
+                <th
+                  key={c.key}
+                  className={c.get ? "sortable" : ""}
+                  onClick={() => toggleSort(c)}
+                  title={c.get ? "Click to sort" : undefined}
+                >
+                  {c.label}
+                  {sort.key === c.key && <span className="sort-arrow">{sort.dir === 1 ? " ▲" : " ▼"}</span>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((t) => {
+              const hasCatalyst = t.enriched && t.signals.some((s) => s.catalyst);
+              return (
+                <tr
+                  key={t.id}
+                  className={`account-row ${hasCatalyst ? "row-catalyst" : ""}`}
+                  onClick={() => onOpen(t.id)}
+                >
+                  <td className="cell-rank">{rankOf(t)}</td>
+                  <td>
+                    <div className="cell-company">
+                      {t.company}
+                      {hasCatalyst && <span className="catalyst-tag">⚡ Catalyst</span>}
+                    </div>
+                    <div className="cell-vertical">{t.vertical}</div>
+                  </td>
+                  <td className="cell-dim">{t.details?.stage || t.stage}</td>
+                  <td className="cell-dim">{t.owner.name}</td>
+                  <td className="cell-num">${t.financials.revenue.toFixed(1)}M</td>
+                  <td className="cell-num">{t.financials.ebitdaMargin}%</td>
+                  <td className="cell-num">{t.financials.arrPct}%</td>
+                  <td className="cell-num"><Score value={t.scores.close} /></td>
+                  <td className="cell-num"><Score value={t.scores.likelihood} /></td>
+                  <td className="cell-signals">
+                    {t.enriched ? (
+                      <div className="chip-row" style={{ marginTop: 0, minHeight: 0 }}>
+                        {t.signals.map((s, i) => (
+                          <span
+                            key={s.id}
+                            className={`chip ${s.contribution > 0 ? "chip-pos" : s.contribution < 0 ? "chip-neg" : ""} ${s.catalyst ? "chip-catalyst" : ""}`}
+                            style={{ animationDelay: `${i * 140}ms` }}
+                            title={s.detail}
+                          >
+                            {s.label}
+                            <b>{s.contribution > 0 ? `+${s.contribution}` : s.contribution || "±0"}</b>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="chip chip-scan">scanning…</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {!rows.length && (
+              <tr><td colSpan={COLUMNS.length} className="cell-empty">No accounts match "{query}"</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

@@ -39,6 +39,7 @@ export function seedTargets() {
       blockers: [
         {
           id: "b1",
+          closeWeight: 12,
           label: "Re-establish contact after 10 months of silence",
           status: "blocked",
           detail:
@@ -51,6 +52,7 @@ export function seedTargets() {
         },
         {
           id: "b2",
+          closeWeight: 4,
           label: "Valuation gap from Run 1 (seller 2.4x vs our 1.6x)",
           status: "pending",
           detail:
@@ -63,6 +65,7 @@ export function seedTargets() {
         },
         {
           id: "b3",
+          closeWeight: 3,
           label: "Broker channel available — not yet engaged",
           status: "pending",
           detail:
@@ -75,6 +78,7 @@ export function seedTargets() {
         },
         {
           id: "b4",
+          closeWeight: 2,
           label: "No face-to-face with current deal lead",
           status: "pending",
           detail:
