@@ -48,7 +48,7 @@ const COLUMNS = [
   { key: "company", label: "Account", get: (t) => t.company },
   { key: "stage", label: "Stage", get: (t) => t.details?.stage || t.stage },
   { key: "nexttouch", label: "Next Touch", get: (t) => t.nextTouch?.due || "9999" },
-  { key: "owner", label: "Owner", get: (t) => t.owner.name },
+  { key: "owner", label: "Owner", get: (t) => t.details?.accountOwner || t.owner.name },
   { key: "revenue", label: "Revenue", get: (t) => t.financials.revenue },
   { key: "ebitda", label: "EBITDA %", get: (t) => t.financials.ebitdaMargin },
   { key: "arr", label: "ARR %", get: (t) => t.financials.arrPct },
@@ -57,14 +57,60 @@ const COLUMNS = [
   { key: "signals", label: "Signals", get: null },
 ];
 
-function KpiTile({ icon, label, value, tone, onClick }) {
+function KpiTile({ icon, label, value, tone, onClick, tip, active }) {
   return (
-    <div className={`kpi ${onClick ? "kpi-click" : ""}`} onClick={onClick}>
+    <div className={`kpi ${onClick ? "kpi-click" : ""} ${active ? "kpi-active" : ""}`} onClick={onClick}>
       <span className={`kpi-icon kpi-${tone || "neutral"}`}>{icon}</span>
       <div>
         <div className="kpi-value">{value}</div>
         <div className="kpi-label">{label}</div>
       </div>
+      {tip && <div className="kpi-tip">{tip}</div>}
+    </div>
+  );
+}
+
+function OwnerCell({ name }) {
+  if (!name) return <span className="muted">—</span>;
+  const initials = name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  return (
+    <span className="owner-cell" title={name}>
+      <span className="owner-avatar">{initials}</span>
+      <span className="owner-name">{name.split(" ")[0]}</span>
+    </span>
+  );
+}
+
+// Top signals only — catalyst first, then by impact; the rest fold into +N.
+function SignalCell({ target }) {
+  if (!target.enriched) return <span className="chip chip-scan">scanning…</span>;
+  const sorted = [...target.signals].sort(
+    (a, b) => (b.catalyst ? 1 : 0) - (a.catalyst ? 1 : 0) || Math.abs(b.contribution) - Math.abs(a.contribution)
+  );
+  const visible = sorted.slice(0, 2);
+  const rest = sorted.slice(2);
+  return (
+    <div className="chip-row" style={{ marginTop: 0, minHeight: 0, flexWrap: "nowrap" }}>
+      {visible.map((s, i) => (
+        <span
+          key={s.id}
+          className={`chip chip-tight ${s.contribution > 0 ? "chip-pos" : s.contribution < 0 ? "chip-neg" : ""} ${s.catalyst ? "chip-catalyst" : ""}`}
+          style={{ animationDelay: `${i * 140}ms` }}
+          title={`${s.label}: ${s.value} — ${s.detail}`}
+        >
+          <span className="chip-label">{s.label}</span>
+          <b>{s.contribution > 0 ? `+${s.contribution}` : s.contribution || "±0"}</b>
+        </span>
+      ))}
+      {rest.length > 0 && (
+        <span
+          className="chip chip-more"
+          style={{ animationDelay: `${visible.length * 140}ms` }}
+          title={rest.map((s) => `${s.label} (${s.contribution > 0 ? "+" : ""}${s.contribution})`).join("\n")}
+        >
+          +{rest.length}
+        </span>
+      )}
     </div>
   );
 }
@@ -72,6 +118,7 @@ function KpiTile({ icon, label, value, tone, onClick }) {
 export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }) {
   const [sort, setSort] = useState({ key: "rank", dir: 1 });
   const [query, setQuery] = useState("");
+  const [catalystOnly, setCatalystOnly] = useState(false);
 
   // FLIP: rows glide to their new position when the ranking changes.
   const rowRefs = useRef(new Map());
@@ -106,6 +153,7 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
     const col = COLUMNS.find((c) => c.key === sort.key) || COLUMNS[0];
     const q = query.trim().toLowerCase();
     let out = [...targets];
+    if (catalystOnly) out = out.filter((t) => t.enriched && t.signals.some((s) => s.catalyst));
     if (q) {
       out = out.filter((t) =>
         [t.company, t.vertical, t.stage, t.owner.name, t.details?.industry]
@@ -120,18 +168,18 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
       return cmp * sort.dir;
     });
     return out;
-  }, [targets, sort, query]);
+  }, [targets, sort, query, catalystOnly]);
 
   return (
     <div className="board">
       <div className="board-header">
         <div>
-          <h1>Accounts · Likelihood to Transact</h1>
+          <h1>Pipeline</h1>
           <p className="board-sub">
             {sweepStatus === "running" && (
               <span className="sweep-live"><span className="dot pulse" /> Agent enrichment sweep running — scanning web, funding, hiring & broker signals…</span>
             )}
-            {sweepStatus === "done" && "Enrichment sweep complete · signals current as of today"}
+            {sweepStatus === "done" && `${targets.length} accounts · ranked by likelihood to transact · signals current as of today`}
             {sweepStatus === "idle" && "Loading pipeline…"}
           </p>
         </div>
@@ -150,12 +198,16 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
             tone="blue"
             label="Avg likelihood"
             value={Math.round(targets.reduce((s, t) => s + t.scores.likelihood, 0) / targets.length)}
+            tip="Average likelihood-to-transact across the pipeline, out of 100. Driven by conversation history + enrichment signals."
           />
           <KpiTile
             icon={<Zap size={17} />}
             tone="amber"
             label="Catalysts active"
             value={targets.filter((t) => t.enriched && t.signals.some((s) => s.catalyst)).length}
+            onClick={() => setCatalystOnly(!catalystOnly)}
+            active={catalystOnly}
+            tip="A catalyst is an external event — a regulation reversal, a competitor exiting, a funding shift — that removes the specific risk keeping a deal stuck. It's the strongest revival signal in the book. Click to filter the list."
           />
           <KpiTile
             icon={<CalendarClock size={17} />}
@@ -163,6 +215,7 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
             label="Touches due"
             value={targets.filter((t) => t.nextTouch && dueStatus(t.nextTouch.due) !== "upcoming").length}
             onClick={onGoMyDay}
+            tip="Accounts at or past their agent-prescribed next-touch date. Click to open My Day."
           />
           <KpiTile
             icon={<ClipboardList size={17} />}
@@ -170,6 +223,7 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
             label="Open tasks"
             value={tasks.filter((t) => !t.done).length}
             onClick={onGoMyDay}
+            tip="Follow-ups the agent created from approved actions. Click to open My Day."
           />
         </div>
       )}
@@ -235,7 +289,7 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
                       <span className="muted">—</span>
                     )}
                   </td>
-                  <td className="cell-dim">{t.owner.name}</td>
+                  <td><OwnerCell name={t.details?.accountOwner || t.owner.name} /></td>
                   <td className="cell-num">${t.financials.revenue.toFixed(1)}M</td>
                   <td className="cell-num">{t.financials.ebitdaMargin}%</td>
                   <td className="cell-num">{t.financials.arrPct}%</td>
@@ -247,29 +301,17 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
                     </div>
                   </td>
                   <td className="cell-signals">
-                    {t.enriched ? (
-                      <div className="chip-row" style={{ marginTop: 0, minHeight: 0 }}>
-                        {t.signals.map((s, i) => (
-                          <span
-                            key={s.id}
-                            className={`chip ${s.contribution > 0 ? "chip-pos" : s.contribution < 0 ? "chip-neg" : ""} ${s.catalyst ? "chip-catalyst" : ""}`}
-                            style={{ animationDelay: `${i * 140}ms` }}
-                            title={s.detail}
-                          >
-                            {s.label}
-                            <b>{s.contribution > 0 ? `+${s.contribution}` : s.contribution || "±0"}</b>
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="chip chip-scan">scanning…</span>
-                    )}
+                    <SignalCell target={t} />
                   </td>
                 </tr>
               );
             })}
             {!rows.length && (
-              <tr><td colSpan={COLUMNS.length} className="cell-empty">No accounts match "{query}"</td></tr>
+              <tr>
+                <td colSpan={COLUMNS.length} className="cell-empty">
+                  {query ? `No accounts match "${query}"` : catalystOnly ? "No accounts with an active catalyst" : "No accounts"}
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
