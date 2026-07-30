@@ -26,6 +26,16 @@ const ACTION_EFFECTS = {
   "act-structure": { targetId: "vantage", likelihood: +2, close: +4, blockerId: "b2" },
   "act-broker": { targetId: "vantage", likelihood: +3, close: +3, blockerId: "b3" },
   "act-visit": { targetId: "vantage", likelihood: +1, close: +2, blockerId: "b4" },
+  "act-preempt": { targetId: "novaris", likelihood: +6, close: +8, blockerId: "b1" },
+  "act-marks": { targetId: "novaris", likelihood: +1, close: +3, blockerId: "b2" },
+  "act-nda": { targetId: "merritt", likelihood: +6, close: +8, blockerId: "b1" },
+  "act-fin": { targetId: "merritt", likelihood: +2, close: +5, blockerId: "b2" },
+  "act-meet": { targetId: "merritt", likelihood: +3, close: +5, blockerId: "b3" },
+  "act-annual": { targetId: "solenta", likelihood: +5, close: +6, blockerId: "b1" },
+  "act-founderdinner": { targetId: "solenta", likelihood: +2, close: +4, blockerId: "b2" },
+  "act-erie": { targetId: "hartline", likelihood: +9, close: +7, blockerId: "b1" },
+  "act-arr": { targetId: "hartline", likelihood: +1, close: +3, blockerId: "b2" },
+  "act-intro": { targetId: "plexa", likelihood: +4, close: +3, blockerId: "b1" },
 };
 
 export function applyAction(targetId, actionId) {
