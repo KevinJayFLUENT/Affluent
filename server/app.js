@@ -86,8 +86,7 @@ app.post("/api/analyze", async (req, res) => {
   try {
     for (const step of steps) {
       send("trace", { text: step });
-      // Pace ~700ms per step, but bail out of pacing once analysis resolves late in list
-      await sleep(650 + Math.random() * 250);
+      await sleep(400 + Math.random() * 150);
     }
     send("trace", { text: "Synthesizing analysis (claude-opus-5)…" });
     const analysis = await analysisPromise;

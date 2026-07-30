@@ -96,9 +96,10 @@ function extractJson(response) {
 export async function analyzeTarget(target, patternLibrary, conversationSignals = []) {
   const response = await createWithFallbackModels({
     model: MODEL,
-    max_tokens: 8000,
+    // Kept tight so the live call lands well inside serverless limits.
+    max_tokens: 3000,
     output_config: {
-      effort: "medium",
+      effort: "low",
       format: { type: "json_schema", schema: ANALYSIS_SCHEMA },
     },
     system:

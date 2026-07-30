@@ -40,6 +40,7 @@ export async function analyzeTarget(targetId, { onTrace, onAnalysis }) {
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let gotAnalysis = false;
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -56,7 +57,12 @@ export async function analyzeTarget(targetId, { onTrace, onAnalysis }) {
       if (!data) continue;
       const parsed = JSON.parse(data);
       if (event === "trace") onTrace?.(parsed);
-      if (event === "analysis") onAnalysis?.(parsed);
+      if (event === "analysis") {
+        gotAnalysis = true;
+        onAnalysis?.(parsed);
+      }
     }
   }
+  // Stream cut off (e.g. serverless timeout) — let the caller fall back.
+  if (!gotAnalysis) throw new Error("analysis stream ended early");
 }
