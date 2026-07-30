@@ -19,7 +19,7 @@ export function seedTargets() {
       vertical: "Municipal permitting & licensing software",
       location: "Boise, ID",
       hero: true,
-      brand: { color: "#0b5cab", color2: "#032d60", initials: "VP", mark: "permit" },
+      brand: { color: "#1e4a8a", initials: "VP", mark: "permit" },
       stage: "Dormant — Run 1 died at APA (Oct 2025)",
       owner: {
         name: "Ray Delgado",
@@ -290,7 +290,7 @@ export function seedTargets() {
       company: "Novaris Health Scheduling",
       vertical: "Clinic & therapy scheduling software",
       location: "Minneapolis, MN",
-      brand: { color: "#06a59a", color2: "#014d44", initials: "NH" },
+      brand: { color: "#0b7285", initials: "NH" },
       stage: "Early dialogue — PE holder signaling",
       owner: {
         name: "Copper Gate Partners (Tom Brandt, CEO)",
@@ -375,7 +375,7 @@ export function seedTargets() {
       company: "Merritt Fuel Systems",
       vertical: "Back-office software for fuel jobbers",
       location: "Tulsa, OK",
-      brand: { color: "#dd7a01", color2: "#8c4b02", initials: "MF" },
+      brand: { color: "#b45309", initials: "MF" },
       stage: "Exploring — NDA in legal review",
       owner: {
         name: "Doc Merritt",
@@ -465,7 +465,7 @@ export function seedTargets() {
       company: "Solenta Labs",
       vertical: "LIMS for water & environmental testing labs",
       location: "Madison, WI",
-      brand: { color: "#9050e9", color2: "#401075", initials: "SL" },
+      brand: { color: "#5f3dc4", initials: "SL" },
       stage: "Nurture — 'ask me next year' (it's next year)",
       owner: {
         name: "Dev Okonkwo",
@@ -551,7 +551,7 @@ export function seedTargets() {
       company: "Hartline Foundry Systems",
       vertical: "ERP for metal casting & foundry shops",
       location: "Erie, PA",
-      brand: { color: "#e26e64", color2: "#8e2a20", initials: "HF" },
+      brand: { color: "#9a3412", initials: "HF" },
       stage: "Early — relationship building",
       owner: {
         name: "Walt Hartline",
@@ -632,7 +632,7 @@ export function seedTargets() {
       company: "Plexa Marina Management",
       vertical: "Marina & boatyard management SaaS",
       location: "Annapolis, MD",
-      brand: { color: "#5867e8", color2: "#1f2b8e", initials: "PX" },
+      brand: { color: "#364fc7", initials: "PX" },
       stage: "New — no outreach yet",
       owner: {
         name: "Jess Okafor",

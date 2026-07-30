@@ -148,11 +148,11 @@ function FactorModal({ target, analysis, mode, onClose }) {
 }
 
 const sentimentColor = {
-  positive: "#2e844a",
-  warm: "#dd7a01",
-  neutral: "#8a8f98",
-  negative: "#ba0517",
-  none: "#c9ced6",
+  positive: "#15803d",
+  warm: "#d97706",
+  neutral: "#9ca3af",
+  negative: "#b91c1c",
+  none: "#e5e7eb",
 };
 
 function TimelineItem({ a }) {
