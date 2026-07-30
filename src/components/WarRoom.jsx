@@ -191,7 +191,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
   const [executing, setExecuting] = useState(false);
   const [executedActions, setExecutedActions] = useState([]);
   const [rescoreNote, setRescoreNote] = useState(null);
-  const traceEndRef = useRef(null);
+  const traceBodyRef = useRef(null);
   const started = useRef(false);
 
   useEffect(() => {
@@ -203,8 +203,10 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
     }).catch(() => setAnalysis(target.cachedAnalysis));
   }, [target.id]);
 
+  // Auto-scroll ONLY the trace panel's own scrollbar — never the page.
   useEffect(() => {
-    traceEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = traceBodyRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [trace]);
 
   async function approve(action, artifact) {
@@ -445,14 +447,13 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
             <div className="trace-head">
               <span className="dot pulse" /> Agent Trace
             </div>
-            <div className="trace-body">
+            <div className="trace-body" ref={traceBodyRef}>
               {trace.map((line, i) => (
                 <div key={i} className="trace-line">
                   <span className="trace-time">{String(i + 1).padStart(2, "0")}</span>
                   {line}
                 </div>
               ))}
-              <div ref={traceEndRef} />
             </div>
           </div>
         </div>
