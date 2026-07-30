@@ -239,10 +239,10 @@ app.get("/api/aicheck", async (req, res) => {
   if (!aiAvailable()) return res.json({ ok: false, error: "no ANTHROPIC_API_KEY in env" });
   try {
     if (req.query.full) {
-      // Replicate the real analyze call end-to-end on the smallest target.
-      const target = getTarget("plexa");
-      const analysis = await analyzeTarget(target, PATTERN_LIBRARY, []);
-      return res.json({ ok: true, mode: "full-analyze", archetype: analysis?.archetype?.label });
+      // Replicate the real analyze call end-to-end on any target.
+      const target = getTarget(typeof req.query.full === "string" && getTarget(req.query.full) ? req.query.full : "plexa");
+      const analysis = await analyzeTarget(target, PATTERN_LIBRARY, computeConversationSignals(target));
+      return res.json({ ok: true, mode: `full-analyze:${target.id}`, archetype: analysis?.archetype?.label });
     }
     const { default: Anthropic } = await import("@anthropic-ai/sdk");
     const client = new Anthropic();
