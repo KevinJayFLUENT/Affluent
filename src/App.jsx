@@ -4,6 +4,7 @@ import Board from "./components/Board.jsx";
 import WarRoom from "./components/WarRoom.jsx";
 import MyDay from "./components/MyDay.jsx";
 import Logo from "./components/Logo.jsx";
+import { RotateCcw } from "./components/Icons.jsx";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -127,7 +128,7 @@ export default function App() {
               window.location.reload();
             }}
           >
-            ⟲
+            <RotateCcw size={15} />
           </button>
         </div>
       </header>
@@ -139,6 +140,7 @@ export default function App() {
           tasks={tasks}
           log={log}
           onOpen={(id) => setView({ name: "warroom", targetId: id })}
+          onGoMyDay={() => setView({ name: "myday" })}
         />
       )}
 

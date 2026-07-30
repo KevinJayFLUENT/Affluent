@@ -185,6 +185,13 @@ body {
   background: var(--green-soft); border: 1px solid #bbe5c8;
   color: var(--green); border-radius: 8px; padding: 10px 13px; font-size: 12.5px; margin-bottom: 16px;
   animation: chipIn 0.4s ease backwards;
+  display: flex; gap: 8px; align-items: flex-start;
+}
+.rescore-note svg { margin-top: 2px; }
+
+/* Buttons with inline icons */
+.approve-btn, .blocker-action, .demo-sim-btn, .digest-btn, .tl-read, .insight-more, .brief-btn {
+  display: inline-flex; align-items: center; gap: 6px;
 }
 
 /* Panels */
@@ -263,6 +270,70 @@ body {
 .modal-narrative { color: var(--text-dim); font-size: 13.5px; margin-bottom: 16px; }
 .modal-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 @media (max-width: 760px) { .modal-cols { grid-template-columns: 1fr; } }
+
+/* KPI strip */
+.kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; max-width: 860px; }
+.kpi {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 13px 16px; box-shadow: var(--shadow);
+}
+.kpi-click { cursor: pointer; transition: border-color 0.12s ease, box-shadow 0.12s ease; }
+.kpi-click:hover { border-color: var(--blue); box-shadow: var(--shadow-md); }
+.kpi-icon {
+  width: 34px; height: 34px; border-radius: 8px; display: inline-flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.kpi-blue { background: var(--blue-soft); color: var(--blue); }
+.kpi-amber { background: var(--amber-soft); color: var(--amber); }
+.kpi-red { background: var(--red-soft); color: var(--red); }
+.kpi-neutral { background: var(--panel-2); color: var(--text-dim); }
+.kpi-value { font-size: 20px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--text); }
+.kpi-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.7px; font-weight: 600; color: var(--text-faint); margin-top: 1px; }
+
+/* Highlights band */
+.highlights {
+  display: flex; flex-wrap: wrap; gap: 0;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); margin-bottom: 18px; padding: 12px 4px;
+}
+.hl-field { padding: 2px 18px; border-right: 1px solid var(--line-soft); min-width: 0; }
+.hl-field:last-child { border-right: none; }
+.hl-wide { flex: 1; min-width: 220px; }
+.hl-field label {
+  display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.7px;
+  font-weight: 650; color: var(--text-faint); margin-bottom: 3px;
+}
+.hl-field > div { font-size: 13px; color: var(--text); }
+.hl-strong { font-size: 15px !important; font-weight: 750; font-variant-numeric: tabular-nums; }
+.hl-touch { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hl-touch-action { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-dim); font-size: 12.5px; }
+
+/* Skeleton loading */
+.skel-panel { pointer-events: none; }
+.skel {
+  background: linear-gradient(90deg, var(--line-soft) 25%, #f7f8fa 45%, var(--line-soft) 65%);
+  background-size: 300% 100%; animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 6px;
+}
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.skel-line { height: 12px; margin-bottom: 10px; }
+.skel-row { height: 42px; margin-bottom: 8px; border-radius: 8px; }
+.skel-btn { height: 36px; width: 170px; border-radius: 8px; margin-top: 6px; }
+
+/* Meter delta */
+.meter-delta {
+  position: absolute; top: 10px; right: 12px; z-index: 2;
+  font-size: 12px; font-weight: 750; padding: 2px 9px; border-radius: 999px;
+  animation: chipIn 0.35s ease backwards;
+}
+.meter-delta.pos { background: var(--green-soft); color: var(--green); border: 1px solid #bbe5c8; }
+.meter-delta.neg { background: var(--red-soft); color: var(--red); border: 1px solid #f3caca; }
+.meter-flash { animation: meterFlash 1.6s ease-out 1; }
+@keyframes meterFlash {
+  0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35); }
+  100% { box-shadow: 0 0 0 14px rgba(37, 99, 235, 0); }
+}
 
 /* Meeting brief */
 .brief-btn {

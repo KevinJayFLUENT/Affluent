@@ -1,4 +1,5 @@
 import React from "react";
+import { FileText } from "./Icons.jsx";
 
 function Field({ label, value }) {
   if (value === undefined || value === null || value === "") return null;
@@ -122,7 +123,7 @@ export default function AccountDetails({ target }) {
         <section className="panel">
           <div className="panel-head"><h3>Notes & Attachments ({d.notes.length})</h3></div>
           {d.notes.map((n, i) => (
-            <div key={i} className="sf-note">📄 {n.title} <span className="sf-note-date">{n.date} · Note</span></div>
+            <div key={i} className="sf-note"><FileText size={13} /> {n.title} <span className="sf-note-date">{n.date} · Note</span></div>
           ))}
         </section>
       )}

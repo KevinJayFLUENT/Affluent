@@ -1,7 +1,8 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAnimatedNumber } from "../hooks.js";
 import CompanyLogo from "./CompanyLogo.jsx";
-import { DueBadge } from "./MyDay.jsx";
+import { DueBadge, dueStatus } from "./MyDay.jsx";
+import { Zap, Gauge, CalendarClock, ClipboardList } from "./Icons.jsx";
 
 function scoreTone(v) {
   if (v >= 70) return "hot";
@@ -56,7 +57,19 @@ const COLUMNS = [
   { key: "signals", label: "Signals", get: null },
 ];
 
-export default function Board({ targets, sweepStatus, tasks, onOpen }) {
+function KpiTile({ icon, label, value, tone, onClick }) {
+  return (
+    <div className={`kpi ${onClick ? "kpi-click" : ""}`} onClick={onClick}>
+      <span className={`kpi-icon kpi-${tone || "neutral"}`}>{icon}</span>
+      <div>
+        <div className="kpi-value">{value}</div>
+        <div className="kpi-label">{label}</div>
+      </div>
+    </div>
+  );
+}
+
+export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }) {
   const [sort, setSort] = useState({ key: "rank", dir: 1 });
   const [query, setQuery] = useState("");
 
@@ -130,6 +143,37 @@ export default function Board({ targets, sweepStatus, tasks, onOpen }) {
         )}
       </div>
 
+      {targets.length > 0 && (
+        <div className="kpi-strip">
+          <KpiTile
+            icon={<Gauge size={17} />}
+            tone="blue"
+            label="Avg likelihood"
+            value={Math.round(targets.reduce((s, t) => s + t.scores.likelihood, 0) / targets.length)}
+          />
+          <KpiTile
+            icon={<Zap size={17} />}
+            tone="amber"
+            label="Catalysts active"
+            value={targets.filter((t) => t.enriched && t.signals.some((s) => s.catalyst)).length}
+          />
+          <KpiTile
+            icon={<CalendarClock size={17} />}
+            tone={targets.some((t) => t.nextTouch && dueStatus(t.nextTouch.due) !== "upcoming") ? "red" : "neutral"}
+            label="Touches due"
+            value={targets.filter((t) => t.nextTouch && dueStatus(t.nextTouch.due) !== "upcoming").length}
+            onClick={onGoMyDay}
+          />
+          <KpiTile
+            icon={<ClipboardList size={17} />}
+            tone="neutral"
+            label="Open tasks"
+            value={tasks.filter((t) => !t.done).length}
+            onClick={onGoMyDay}
+          />
+        </div>
+      )}
+
       <div className="list-toolbar">
         <input
           className="list-filter"
@@ -174,7 +218,7 @@ export default function Board({ targets, sweepStatus, tasks, onOpen }) {
                       <div>
                         <div className="cell-company">
                           {t.company}
-                          {hasCatalyst && <span className="catalyst-tag">⚡ Catalyst</span>}
+                          {hasCatalyst && <span className="catalyst-tag"><Zap size={10} /> Catalyst</span>}
                         </div>
                         <div className="cell-vertical">{t.vertical}</div>
                       </div>

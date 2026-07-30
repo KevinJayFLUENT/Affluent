@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import CompanyLogo from "./CompanyLogo.jsx";
+import { RotateCcw, Play, ChevronDown, ChevronUp } from "./Icons.jsx";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -46,7 +47,7 @@ export default function MyDay({ targets, tasks, digest, onOpen, onToggleTask, on
         <div className="panel-head">
           <h3>Weekly Portfolio Sweep</h3>
           <button className="digest-btn" onClick={onRunDigest} disabled={digestRunning}>
-            {digestRunning ? "Sweeping…" : digest ? "↻ Re-run sweep" : "▸ Run sweep"}
+            {digestRunning ? "Sweeping…" : digest ? <><RotateCcw size={12} /> Re-run sweep</> : <><Play size={11} /> Run sweep</>}
           </button>
         </div>
         {!digest && !digestRunning && (
@@ -132,7 +133,7 @@ export default function MyDay({ targets, tasks, digest, onOpen, onToggleTask, on
         {doneTasks.length > 0 && (
           <>
             <button className="insight-more" onClick={() => setShowDone(!showDone)}>
-              {showDone ? "▴ Hide completed" : `▾ Completed (${doneTasks.length})`}
+              {showDone ? <ChevronUp size={13} /> : <ChevronDown size={13} />} {showDone ? "Hide completed" : `Completed (${doneTasks.length})`}
             </button>
             {showDone && (
               <div className="task-list">

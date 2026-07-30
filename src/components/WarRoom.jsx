@@ -3,6 +3,11 @@ import { analyzeTarget, executeAction, simulateReply, generateBrief } from "../a
 import { useAnimatedNumber } from "../hooks.js";
 import AccountDetails from "./AccountDetails.jsx";
 import CompanyLogo from "./CompanyLogo.jsx";
+import { DueBadge } from "./MyDay.jsx";
+import {
+  Zap, ArrowUpRight, ArrowDownLeft, Check, X, FastForward, Mail,
+  ChevronDown, ChevronUp, Play, TrendingUp,
+} from "./Icons.jsx";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -14,10 +19,26 @@ function splitLead(text = "") {
 
 function Meter({ label, value, sub, tone, onClick, hint }) {
   const display = useAnimatedNumber(value, 1300);
+  const prevRef = useRef(value);
+  const [delta, setDelta] = useState(null);
+  useEffect(() => {
+    const d = value - prevRef.current;
+    if (d !== 0) {
+      prevRef.current = value;
+      setDelta(d);
+      const t = setTimeout(() => setDelta(null), 6000);
+      return () => clearTimeout(t);
+    }
+  }, [value]);
   const r = 52;
   const circ = 2 * Math.PI * r;
   return (
-    <div className="meter" onClick={onClick} title="Click for factor breakdown">
+    <div className={`meter ${delta !== null ? "meter-flash" : ""}`} onClick={onClick} title="Click for factor breakdown">
+      {delta !== null && (
+        <span className={`meter-delta ${delta > 0 ? "pos" : "neg"}`}>
+          {delta > 0 ? "+" : ""}{delta} {delta > 0 ? "▲" : "▼"}
+        </span>
+      )}
       <div className="meter-gauge">
         <svg viewBox="0 0 120 120">
           <circle className="meter-track" cx="60" cy="60" r={r} />
@@ -60,7 +81,7 @@ function Insight({ title, tag, tone, headline, children }) {
       {children && (
         <>
           <button className="insight-more" onClick={() => setOpen(!open)}>
-            {open ? "▴ Less" : "▾ More detail"}
+            {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />} {open ? "Less" : "More detail"}
           </button>
           {open && <div className="insight-detail">{children}</div>}
         </>
@@ -276,7 +297,7 @@ function TimelineItem({ a }) {
       <div style={{ minWidth: 0 }}>
         <div className="tl-meta">
           <span className={`tl-dir ${a.direction === "in" ? "in" : "out"}`}>
-            {a.direction === "in" ? "↙ IN" : "↗ OUT"}
+            {a.direction === "in" ? <ArrowDownLeft size={9} /> : <ArrowUpRight size={9} />} {a.direction === "in" ? "IN" : "OUT"}
           </span>{" "}
           {a.date} · {a.rep} · {a.type}
         </div>
@@ -285,7 +306,7 @@ function TimelineItem({ a }) {
         {a.body && (
           <>
             <button className="tl-read" onClick={() => setOpen(!open)}>
-              {open ? "▴ Hide email" : "✉ Read email"}
+              {open ? <><ChevronUp size={12} /> Hide email</> : <><Mail size={12} /> Read email</>}
             </button>
             {open && <div className="tl-body">{a.body}</div>}
           </>
@@ -440,6 +461,41 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
         </button>
       </div>
 
+      {/* Highlights band — key fields at a glance, Salesforce-style */}
+      <div className="highlights">
+        <div className="hl-field">
+          <label>Stage</label>
+          <div>{target.details?.stage || target.stage}</div>
+        </div>
+        <div className="hl-field">
+          <label>Likelihood</label>
+          <div className="hl-strong">{target.scores.likelihood}</div>
+        </div>
+        <div className="hl-field">
+          <label>Close Prob.</label>
+          <div className="hl-strong">{target.scores.close}</div>
+        </div>
+        <div className="hl-field hl-wide">
+          <label>Next Touch</label>
+          <div className="hl-touch">
+            {target.nextTouch ? (
+              <>
+                <DueBadge due={target.nextTouch.due} />
+                <span className="hl-touch-action">{target.nextTouch.action}</span>
+              </>
+            ) : "—"}
+          </div>
+        </div>
+        <div className="hl-field">
+          <label>Owner</label>
+          <div>{target.details?.accountOwner || "—"}</div>
+        </div>
+        <div className="hl-field">
+          <label>NDA</label>
+          <div>{target.details?.ndaIssued || "No"}</div>
+        </div>
+      </div>
+
       {briefOpen && (
         <BriefModal
           target={target}
@@ -474,7 +530,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
               onClick={() => setFactorModal("close")}
             />
           </div>
-          {rescoreNote && <div className="rescore-note">↑ {rescoreNote}</div>}
+          {rescoreNote && <div className="rescore-note"><TrendingUp size={13} /> {rescoreNote}</div>}
 
           {simAvailable && (
             <div className="demo-sim">
@@ -483,7 +539,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
                 <div className="demo-sim-text">Advance the clock and play the predicted reply.</div>
               </div>
               <button className="demo-sim-btn" disabled={executing} onClick={simulate}>
-                ⏩ {sim.daysLater} days later
+                <FastForward size={13} /> {sim.daysLater} days later
               </button>
             </div>
           )}
@@ -538,10 +594,29 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
           {tab === "intelligence" && (
             <>
               {!analysis && (
-                <div className="analyzing">
-                  <div className="spinner" />
-                  <div>Agent reading {target.activity.length} logged interactions…</div>
-                </div>
+                <>
+                  <div className="analyzing">
+                    <div className="spinner" />
+                    <div>Agent reading {target.activity.length} logged interactions…</div>
+                  </div>
+                  <div className="panel skel-panel">
+                    <div className="skel skel-line" style={{ width: "34%" }} />
+                    <div className="skel skel-line" style={{ width: "92%" }} />
+                    <div className="skel skel-line" style={{ width: "78%" }} />
+                    <div className="skel skel-btn" />
+                  </div>
+                  <div className="panel skel-panel">
+                    <div className="skel skel-line" style={{ width: "26%" }} />
+                    <div className="skel skel-row" />
+                    <div className="skel skel-row" />
+                    <div className="skel skel-row" />
+                  </div>
+                  <div className="panel skel-panel">
+                    <div className="skel skel-line" style={{ width: "30%" }} />
+                    <div className="skel skel-line" style={{ width: "95%" }} />
+                    <div className="skel skel-line" style={{ width: "62%" }} />
+                  </div>
+                </>
               )}
 
               {/* 0. The payoff: prediction vs. reality (after simulated reply) */}
@@ -550,7 +625,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
                   <div className="pred-rows">
                     {target.predictionOutcome.map((p, i) => (
                       <div key={i} className="pred-row">
-                        <span className="pred-hit">{p.hit ? "✓" : "✗"}</span>
+                        <span className="pred-hit">{p.hit ? <Check size={11} /> : <X size={11} />}</span>
                         <div>
                           <div className="pred-predicted">{p.predicted}</div>
                           <div className="pred-actual">{p.actual}</div>
@@ -567,7 +642,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
                   <div className="action-title">{override.title}</div>
                   <p>{override.rationale}</p>
                   <button className="insight-more" onClick={() => setDraftOpen(!draftOpen)}>
-                    {draftOpen ? "▴ Hide plan" : "▾ View plan"}
+                    {draftOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />} {draftOpen ? "Hide plan" : "View plan"}
                   </button>
                   {draftOpen && <pre className="artifact">{override.artifact}</pre>}
                   <div className="action-buttons">
@@ -576,7 +651,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
                       disabled={executing}
                       onClick={() => approve(overrideBlocker.action, override.artifact)}
                     >
-                      {executing ? "Executing…" : "✓ Review & Approve"}
+                      {executing ? "Executing…" : <><Check size={13} /> Review & Approve</>}
                     </button>
                     <span className="action-note">Simulated send · state changes are real</span>
                   </div>
@@ -588,7 +663,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
                   <div className="action-title">{analysis.recommendedAction.title}</div>
                   <p>{analysis.recommendedAction.rationale}</p>
                   <button className="insight-more" onClick={() => setDraftOpen(!draftOpen)}>
-                    {draftOpen ? "▴ Hide draft" : "▾ View drafted email"}
+                    {draftOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />} {draftOpen ? "Hide draft" : "View drafted email"}
                   </button>
                   {draftOpen && <pre className="artifact">{analysis.recommendedAction.artifact}</pre>}
                   <div className="action-buttons">
@@ -597,7 +672,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
                       disabled={executing}
                       onClick={() => approve(primaryBlocker.action, analysis.recommendedAction.artifact)}
                     >
-                      {executing ? "Executing…" : "✓ Review & Approve"}
+                      {executing ? "Executing…" : <><Check size={13} /> Review & Approve</>}
                     </button>
                     <span className="action-note">Simulated send · state changes are real</span>
                   </div>
@@ -628,7 +703,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
                         </div>
                         {b.action && isOpenBlocker(b) && !executedActions.includes(b.action.id) && (
                           <button className="blocker-action" disabled={executing} onClick={() => approve(b.action, null)}>
-                            ▸ {b.action.label}
+                            <Play size={9} /> {b.action.label}
                           </button>
                         )}
                       </div>
@@ -643,7 +718,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
                   title="Revival Radar"
                   tag="catalyst"
                   tone="catalyst"
-                  headline={`⚡ ${analysis.revivalRadar.catalyst}`}
+                  headline={<><Zap size={13} style={{ color: "#d97706" }} /> {analysis.revivalRadar.catalyst}</>}
                 >
                   <p>{analysis.revivalRadar.whyItChangesTheMath}</p>
                   <p className="rr-src">Source: {analysis.revivalRadar.source}</p>
