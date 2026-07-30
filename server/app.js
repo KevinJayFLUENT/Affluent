@@ -254,6 +254,7 @@ app.post("/api/simulate", (req, res) => {
   const before = { ...target.scores };
   target.scores.likelihood = Math.min(99, target.scores.likelihood + sim.effects.likelihood);
   target.scores.close = Math.min(99, target.scores.close + sim.effects.close);
+  target.scoreHistory.push(target.scores.likelihood);
 
   const resolved = target.blockers.find((b) => b.id === sim.effects.resolveBlockerId);
   if (resolved) resolved.status = "resolved";

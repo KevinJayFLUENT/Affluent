@@ -47,7 +47,13 @@ export default function App() {
       setTargets((prev) =>
         prev.map((p) =>
           p.id === t.id
-            ? { ...p, enriched: true, justEnriched: true, scores: { ...p.scores, likelihood: result.after } }
+            ? {
+                ...p,
+                enriched: true,
+                justEnriched: true,
+                scores: { ...p.scores, likelihood: result.after },
+                scoreHistory: [...(p.scoreHistory || []), result.after],
+              }
             : p
         )
       );

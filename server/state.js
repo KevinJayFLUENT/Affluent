@@ -1,14 +1,17 @@
 // In-memory deal state. Seeded once per server run; mutated by enrich/act.
 import { seedTargets } from "./data/targets.js";
 
+// Each target tracks its likelihood history so the UI can draw trends.
+const withHistory = (t) => ({ ...t, scoreHistory: [t.scores.likelihood] });
+
 export const state = {
-  targets: seedTargets(),
+  targets: seedTargets().map(withHistory),
   log: [], // global activity log entries written by agent actions
   tasks: [],
 };
 
 export function resetState() {
-  state.targets = seedTargets();
+  state.targets = seedTargets().map(withHistory);
   state.log = [];
   state.tasks = [];
   state.digest = null;
@@ -54,6 +57,7 @@ export function applyAction(targetId, actionId) {
   const before = { ...target.scores };
   target.scores.likelihood = Math.min(99, target.scores.likelihood + effect.likelihood);
   target.scores.close = Math.min(99, target.scores.close + effect.close);
+  target.scoreHistory.push(target.scores.likelihood);
 
   const blocker = target.blockers.find((b) => b.id === effect.blockerId);
   if (blocker) blocker.status = "in-motion";
@@ -68,5 +72,6 @@ export function markEnriched(targetId) {
   target.enriched = true;
   const delta = target.signals.reduce((sum, s) => sum + s.contribution, 0);
   target.scores.likelihood = Math.max(1, Math.min(99, target.scores.likelihood + delta));
+  target.scoreHistory.push(target.scores.likelihood);
   return target;
 }

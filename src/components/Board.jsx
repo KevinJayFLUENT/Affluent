@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAnimatedNumber } from "../hooks.js";
 import CompanyLogo from "./CompanyLogo.jsx";
 import { DueBadge } from "./MyDay.jsx";
@@ -12,6 +12,34 @@ function scoreTone(v) {
 function Score({ value }) {
   const display = useAnimatedNumber(value, 1100);
   return <span className={`row-score ${scoreTone(display)}`}>{display}</span>;
+}
+
+// Tiny score-history trend line.
+function Sparkline({ points = [] }) {
+  if (points.length < 2) return <span className="spark spark-flat" />;
+  const W = 52, H = 18, p = 2.5;
+  const min = Math.min(...points), max = Math.max(...points);
+  const range = Math.max(2, max - min);
+  const xy = points.map((v, i) => [
+    p + (i * (W - 2 * p)) / (points.length - 1),
+    H - p - ((v - min) / range) * (H - 2 * p),
+  ]);
+  const up = points[points.length - 1] >= points[0];
+  const [lx, ly] = xy[xy.length - 1];
+  return (
+    <svg className="spark" width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+      <polyline
+        points={xy.map(([x, y]) => `${x},${y}`).join(" ")}
+        fill="none"
+        stroke={up ? "#15803d" : "#b91c1c"}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.75"
+      />
+      <circle cx={lx} cy={ly} r="2.2" fill={up ? "#15803d" : "#b91c1c"} />
+    </svg>
+  );
 }
 
 const COLUMNS = [
@@ -31,6 +59,24 @@ const COLUMNS = [
 export default function Board({ targets, sweepStatus, tasks, onOpen }) {
   const [sort, setSort] = useState({ key: "rank", dir: 1 });
   const [query, setQuery] = useState("");
+
+  // FLIP: rows glide to their new position when the ranking changes.
+  const rowRefs = useRef(new Map());
+  const prevTops = useRef(new Map());
+  useLayoutEffect(() => {
+    rowRefs.current.forEach((el, id) => {
+      if (!el || !el.isConnected) return;
+      const top = el.getBoundingClientRect().top;
+      const prev = prevTops.current.get(id);
+      if (prev !== undefined && Math.abs(prev - top) > 2) {
+        el.animate(
+          [{ transform: `translateY(${prev - top}px)` }, { transform: "translateY(0)" }],
+          { duration: 550, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }
+        );
+      }
+      prevTops.current.set(id, top);
+    });
+  });
 
   function toggleSort(col) {
     if (!col.get) return;
@@ -117,6 +163,7 @@ export default function Board({ targets, sweepStatus, tasks, onOpen }) {
               return (
                 <tr
                   key={t.id}
+                  ref={(el) => rowRefs.current.set(t.id, el)}
                   className={`account-row ${hasCatalyst ? "row-catalyst" : ""}`}
                   onClick={() => onOpen(t.id)}
                 >
@@ -149,7 +196,12 @@ export default function Board({ targets, sweepStatus, tasks, onOpen }) {
                   <td className="cell-num">{t.financials.ebitdaMargin}%</td>
                   <td className="cell-num">{t.financials.arrPct}%</td>
                   <td className="cell-num"><Score value={t.scores.close} /></td>
-                  <td className="cell-num"><Score value={t.scores.likelihood} /></td>
+                  <td className="cell-num">
+                    <div className="score-with-trend">
+                      <Score value={t.scores.likelihood} />
+                      <Sparkline points={t.scoreHistory} />
+                    </div>
+                  </td>
                   <td className="cell-signals">
                     {t.enriched ? (
                       <div className="chip-row" style={{ marginTop: 0, minHeight: 0 }}>

@@ -160,6 +160,57 @@ const sentimentColor = {
   none: "#e5e7eb",
 };
 
+// The relationship at a glance: every touch as a dot on a time axis,
+// colored by sentiment. Silence reads as empty space.
+function SentimentArc({ activity }) {
+  if (activity.length < 3) return null;
+  const W = 300, H = 46, pad = 8, base = 26;
+  const t0 = new Date(activity[0].date + "T00:00:00").getTime();
+  const t1 = Math.max(Date.now(), new Date(activity[activity.length - 1].date + "T00:00:00").getTime());
+  const x = (d) => pad + ((new Date(d + "T00:00:00").getTime() - t0) / (t1 - t0)) * (W - 2 * pad);
+
+  const years = [];
+  for (let y = new Date(t0).getFullYear() + 1; y <= new Date(t1).getFullYear(); y++) {
+    years.push(y);
+  }
+
+  return (
+    <svg className="arc" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      <line x1={pad} y1={base} x2={W - pad} y2={base} stroke="#e5e7eb" strokeWidth="1.5" />
+      {years.map((y) => {
+        const xp = x(`${y}-01-01`);
+        return (
+          <g key={y}>
+            <line x1={xp} y1={base - 4} x2={xp} y2={base + 4} stroke="#d6d9de" strokeWidth="1" />
+            <text x={xp} y={H - 4} textAnchor="middle" fontSize="7.5" fill="#9ca3af">{y}</text>
+          </g>
+        );
+      })}
+      {activity.map((a, i) => {
+        const isMeeting = a.type === "meeting";
+        const isInbound = a.direction === "in";
+        const r = isMeeting ? 5 : isInbound ? 4 : 2.8;
+        const cy = base - (isMeeting ? 10 : isInbound ? 7 : 4);
+        return (
+          <g key={i}>
+            <line x1={x(a.date)} y1={base} x2={x(a.date)} y2={cy} stroke="#e5e7eb" strokeWidth="1" />
+            <circle
+              cx={x(a.date)}
+              cy={cy}
+              r={r}
+              fill={sentimentColor[a.sentiment] || "#e5e7eb"}
+              stroke={isMeeting || isInbound ? "#fff" : "none"}
+              strokeWidth={isMeeting || isInbound ? 1.2 : 0}
+            >
+              <title>{`${a.date} · ${a.subject || a.type} (${a.sentiment})`}</title>
+            </circle>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 function TimelineItem({ a }) {
   const [open, setOpen] = useState(false);
   return (
@@ -230,6 +281,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
     }
     patchTarget(target.id, {
       scores: result.after,
+      scoreHistory: [...(target.scoreHistory || []), result.after.likelihood],
       blockers: target.blockers.map((b) =>
         b.id === result.blockerId ? { ...b, status: "in-motion" } : b
       ),
@@ -274,6 +326,7 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
     }
     patchTarget(target.id, {
       scores: result.after,
+      scoreHistory: [...(target.scoreHistory || []), result.after.likelihood],
       activity: [...target.activity, result.reply],
       blockers: target.blockers.map((b) =>
         b.id === result.resolvedBlockerId ? { ...b, status: "resolved" } : b
@@ -350,6 +403,18 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
           )}
 
           <Panel title="Activity" tag={`${target.activity.length} touches · all logged`}>
+            {target.activity.length >= 3 && (
+              <div className="arc-wrap">
+                <SentimentArc activity={target.activity} />
+                <div className="arc-legend">
+                  <span><i style={{ background: "#15803d" }} /> positive</span>
+                  <span><i style={{ background: "#d97706" }} /> warm</span>
+                  <span><i style={{ background: "#b91c1c" }} /> negative</span>
+                  <span><i style={{ background: "#e5e7eb" }} /> no reply</span>
+                  <span className="arc-legend-note">large dots = meetings & inbound</span>
+                </div>
+              </div>
+            )}
             <div className="timeline">
               {(() => {
                 const items = [...target.activity].reverse();
