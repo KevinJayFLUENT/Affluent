@@ -493,7 +493,10 @@ export async function enrichAccount(account, input) {
   };
   account.signals = enr.signals;
   account.details.scraping = enr.scraping;
-  account.details.industry = account.details.industry || enr.scraping.industry;
+  // The enrichment Industry must always MATCH the Company Information
+  // Industry: the user-entered value wins; otherwise both take the enriched one.
+  if (account.details.industry) enr.scraping.industry = account.details.industry;
+  else account.details.industry = enr.scraping.industry;
   account.details.yearEstablished = enr.scraping.foundedYear;
   account.details.employees = enr.scraping.employeeCountBest;
   account.details.revenues = `${enr.financials.revenue.toFixed(1)}M (est.)`;

@@ -250,7 +250,7 @@ export function seedTargets() {
         nextSteps: "Catalyst-framed re-engagement (senior-level, no price talk)",
         exclusivity: { status: "Expired", startDate: "2025-04-18", endDate: "2025-10-15", owner: "Kevin Jay", challengeStatus: "None" },
         scraping: {
-          employeeCountBest: 37, revenueBestUsd: "$6,400,000", industry: "Custom Software Development",
+          employeeCountBest: 37, revenueBestUsd: "$6,400,000", industry: "GovTech",
           fundingStatus: "bootstrapped_likely", hqCity: "Boise", hqCountry: "US",
           successionScore: 84, acquisitionFitScore: 87, acquisitionFitBand: "high", foundedYear: 2001,
           llmIsVms: "yes", llmVertical: "govtech", llmSubVertical: "municipal permitting & licensing",
