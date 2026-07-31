@@ -158,6 +158,7 @@ export default function Insights({ onOpenAccount }) {
   }
   async function removeReport(id, e) {
     e.stopPropagation();
+    if (!window.confirm("Delete this saved report?")) return;
     await apiDeleteReport(id);
     reloadGallery();
   }
@@ -203,6 +204,7 @@ export default function Insights({ onOpenAccount }) {
               {building ? <><span className="spinner spinner-sm" /> Building…</> : <><Play size={12} /> Build dashboard</>}
             </button>
           </div>
+          <div className="ins-hint">⌘/Ctrl + Enter to build</div>
           <div className="ins-examples">
             {[
               "Accounts by ownership type against days without engagement",
@@ -307,7 +309,7 @@ export default function Insights({ onOpenAccount }) {
         {dashLoading && !data ? (
           <div className="analyzing"><div className="spinner" /><div>Refreshing against live accounts…</div></div>
         ) : (
-          <>
+          <div className={dashLoading ? "ins-dimmed" : ""}>
             {/* KPI tiles */}
             <div className="kpi-strip ins-kpis">
               {(data?.kpis || []).map((k, i) => {
@@ -335,34 +337,37 @@ export default function Insights({ onOpenAccount }) {
                     </button>
                   ))}
 
-                  {data.grid.rows.map((row) => (
-                    <React.Fragment key={row.value}>
-                      <div className="ins-rowhead">
-                        <div className="ins-rowhead-label">{row.label}</div>
-                        <button className="ins-rowtotal" onClick={() => openReport({ type: "grid-row", row: row.value })}>
-                          {row.total} total →
-                        </button>
-                      </div>
-                      {row.cells.map((cell) => (
-                        <button
-                          key={cell.label}
-                          className={`ins-cell ${cell.value === 0 ? "ins-cell-empty" : ""}`}
-                          onClick={() => openReport({ type: "cell", row: row.value, col: cell.label })}
-                          disabled={cell.value === 0}
-                        >
-                          <div className="ins-cell-value">{cell.value}</div>
-                          <div className="ins-cell-foot">
-                            <span className="ins-viewreport">View Report<ArrowUpRight size={11} /></span>
-                            <span className="ins-asof">as of {fmtTime(dash?.refreshedAt)}</span>
-                          </div>
-                        </button>
-                      ))}
-                    </React.Fragment>
-                  ))}
+                  {(() => {
+                    const maxCell = Math.max(1, ...data.grid.rows.flatMap((r) => r.cells.map((c) => c.value)));
+                    return data.grid.rows.map((row) => (
+                      <React.Fragment key={row.value}>
+                        <div className="ins-rowhead">
+                          <div className="ins-rowhead-label">{row.label}</div>
+                          <button className="ins-rowtotal" onClick={() => openReport({ type: "grid-row", row: row.value })}>
+                            {row.total} total →
+                          </button>
+                        </div>
+                        {row.cells.map((cell) => (
+                          <button
+                            key={cell.label}
+                            className={`ins-cell ${cell.value === 0 ? "ins-cell-empty" : ""}`}
+                            style={cell.value > 0 ? { background: `rgba(37, 99, 235, ${(0.05 + (cell.value / maxCell) * 0.16).toFixed(3)})` } : undefined}
+                            onClick={() => openReport({ type: "cell", row: row.value, col: cell.label })}
+                            disabled={cell.value === 0}
+                          >
+                            <div className="ins-cell-value">{cell.value}</div>
+                            <div className="ins-cell-foot">
+                              <span className="ins-viewreport">View Report<ArrowUpRight size={11} /></span>
+                            </div>
+                          </button>
+                        ))}
+                      </React.Fragment>
+                    ));
+                  })()}
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     );
@@ -392,6 +397,7 @@ export default function Insights({ onOpenAccount }) {
         <div className="ins-report">
           {/* Account list */}
           <div className="list-wrap ins-report-table">
+            <div className="ins-report-hint">Click any row to open the account's War Room</div>
             <table className="account-table">
               <thead>
                 <tr>

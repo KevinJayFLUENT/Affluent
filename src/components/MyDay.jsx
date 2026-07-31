@@ -33,8 +33,50 @@ function relativeTime(iso) {
   return hrs < 24 ? `${hrs}h ago` : `${Math.round(hrs / 24)}d ago`;
 }
 
-// Book analytics: two small predictive charts, computed client-side from
-// the scoped accounts. Plain SVG, no libraries — deterministic and safe.
+// Generic donut: [{label, value, color}] with side legend. Pure SVG.
+function Donut({ data, centerLabel }) {
+  const slices = data.filter((d) => d.value > 0);
+  const total = slices.reduce((s, d) => s + d.value, 0);
+  if (!total) return <p className="muted">No data.</p>;
+  const R = 30, C = 2 * Math.PI * R;
+  let offset = 0;
+  return (
+    <div className="donut-row">
+      <svg viewBox="0 0 84 84" width="84" height="84" role="img">
+        <title>{centerLabel}</title>
+        {slices.map((d) => {
+          const len = (d.value / total) * C;
+          const seg = (
+            <circle
+              key={d.label}
+              cx="42" cy="42" r={R}
+              fill="none" stroke={d.color} strokeWidth="13"
+              strokeDasharray={`${Math.max(0.5, len - (slices.length > 1 ? 2 : 0))} ${C}`}
+              strokeDashoffset={-offset}
+              transform="rotate(-90 42 42)"
+            />
+          );
+          offset += len;
+          return seg;
+        })}
+        <text x="42" y="40" textAnchor="middle" fontSize="15" fontWeight="700" fill="#1f2937">{total}</text>
+        <text x="42" y="52" textAnchor="middle" fontSize="7.5" fill="#9ca3af">{centerLabel}</text>
+      </svg>
+      <div className="donut-legend">
+        {data.map((d) => (
+          <div key={d.label} className="donut-leg">
+            <i style={{ background: d.color }} />
+            <span>{d.label}</span>
+            <b>{d.value}</b>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Book analytics: predictive charts computed client-side from the scoped
+// accounts. Plain SVG, no libraries — deterministic and safe.
 function BookCharts({ accounts }) {
   const rows = [...accounts].sort((a, b) => b.scores.likelihood - a.scores.likelihood);
   if (!rows.length) return <p className="muted">No accounts in this book.</p>;
@@ -51,8 +93,46 @@ function BookCharts({ accounts }) {
     const s = dueStatus(d);
     return s === "overdue" ? "#b91c1c" : s === "today" ? "#d97706" : "#2563eb";
   };
+
+  // Book stats
+  const totalRev = rows.reduce((s, t) => s + t.financials.revenue, 0);
+  const avgLik = Math.round(rows.reduce((s, t) => s + t.scores.likelihood, 0) / rows.length);
+  const hot = rows.filter((t) => t.scores.likelihood >= 70).length;
+  const overdueN = rows.filter((t) => t.nextTouch && dueStatus(t.nextTouch.due) !== "upcoming").length;
+
+  // Exclusivity health (statuses derived server-side from dates)
+  const exCount = (s) => rows.filter((t) => t.details?.exclusivity?.status === s).length;
+  const exclusivityData = [
+    { label: "Active", value: exCount("Active"), color: "#15803d" },
+    { label: "Expiring soon", value: exCount("Expiring Soon"), color: "#d97706" },
+    { label: "Expired", value: exCount("Expired"), color: "#b91c1c" },
+    { label: "None", value: rows.length - exCount("Active") - exCount("Expiring Soon") - exCount("Expired"), color: "#d6d9de" },
+  ];
+
+  // Engagement freshness: days since last logged activity
+  const freshnessOf = (t) => {
+    const last = t.activity?.[t.activity.length - 1]?.date;
+    if (!last) return "none";
+    const d = Math.round((Date.now() - new Date(last + "T00:00:00")) / DAY);
+    return d <= 30 ? "fresh" : d <= 90 ? "mid" : "stale";
+  };
+  const fCount = (k) => rows.filter((t) => freshnessOf(t) === k).length;
+  const freshnessData = [
+    { label: "Active <30d", value: fCount("fresh"), color: "#1d4ed8" },
+    { label: "Quiet 30–90d", value: fCount("mid"), color: "#60a5fa" },
+    { label: "Dark 90d+", value: fCount("stale"), color: "#bfdbfe" },
+    { label: "No history", value: fCount("none"), color: "#d6d9de" },
+  ];
+
   return (
     <>
+      <div className="book-stats">
+        <div className="book-stat"><b>${totalRev.toFixed(1)}M</b><span>book revenue</span></div>
+        <div className="book-stat"><b>{avgLik}</b><span>avg likelihood</span></div>
+        <div className="book-stat"><b>{hot}</b><span>hot (≥70)</span></div>
+        <div className="book-stat"><b style={overdueN ? { color: "#b91c1c" } : undefined}>{overdueN}</b><span>touches due</span></div>
+      </div>
+
       <div className="chart-title">Likelihood to transact</div>
       <svg viewBox={`0 0 ${W} ${H1}`} width="100%" role="img">
         <title>Likelihood to transact by account</title>
@@ -109,6 +189,12 @@ function BookCharts({ accounts }) {
           </div>
         </>
       )}
+
+      <div className="chart-title" style={{ marginTop: 16 }}>Exclusivity health</div>
+      <Donut data={exclusivityData} centerLabel="accounts" />
+
+      <div className="chart-title" style={{ marginTop: 16 }}>Engagement freshness</div>
+      <Donut data={freshnessData} centerLabel="accounts" />
     </>
   );
 }
