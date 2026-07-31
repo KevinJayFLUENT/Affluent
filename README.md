@@ -101,7 +101,11 @@ shows a subtle **"Update available — re-analyze"** pill instead of auto-runnin
   - `/api/activity/synthesize` + `/api/activity/commit` — the Activity
     Synthesizer: raw paste → validated structured records → review → commit
   - `/api/act` — executes approved actions: real rescoring rationale, side effects
-    that persist to the database (scores, blockers, tasks, log, next-touch cadence)
+    that persist to the database (scores, blockers, tasks, log, next-touch cadence).
+    If the activity history shows a **live sell-side process** (seller engaged a
+    banker / we're invited into the process), approving an action floors
+    Likelihood to Transact at **100** — the owner is transacting; close
+    probability still moves by the blocker breakdown (whether *we* win it)
   - `/api/simulate` — plays a target's scripted predicted reply (the payoff moment)
   - `/api/brief` — one-page pre-meeting brief per account
   - `/api/digest` — weekly portfolio sweep digest

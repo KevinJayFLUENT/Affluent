@@ -6,6 +6,37 @@
 const SENTIMENT_VALUE = { positive: 2, warm: 1, neutral: 0, none: -0.5, negative: -2 };
 const DAY = 86400000;
 
+// ── Live sell-side process detection ────────────────────────────────────────
+// The strongest read the history can produce: the seller has engaged a
+// banker/advisor and a formal process is underway (or we've been invited into
+// it). At that point the owner has already decided to transact — likelihood
+// is effectively certain; the remaining contest is whether WE win the deal,
+// which is the close-probability side of the model.
+//
+// Patterns are deliberately phrase-level, with a negation guard: "No bankers.
+// Come to Boise" (Ray Delgado) must NOT read as a live process.
+const PROCESS_NEGATION = /\bno bankers?\b|\bwithout (a )?banker\b|\bnot (running|in) a process\b|\bnever run a process\b/i;
+const PROCESS_PATTERNS = [
+  // "engaged an advisor, Kaizen Equity Partners, to handle a potential transaction"
+  /\bengaged\b[^.]{0,80}\b(advisors?|bankers?|partners)\b[^.]{0,80}\b(handle|run|manage|lead|explore)\b/i,
+  // "we were invited to join the process"
+  /\b(invited|asked)\b[^.]{0,50}\b(join|participate in)\b[^.]{0,40}\bprocess\b/i,
+  // "engaged X to run a process" / "running a sell-side process"
+  /\brun(ning)?\s+a\s+(sale\s+|sell[- ]?side\s+)?process\b/i,
+  /\bsell[- ]?side process\b|\bbanker[- ]?led process\b|\bformal (sale )?process\b/i,
+  // "direct anything further to them" (redirect to the seller's advisor)
+  /\bdirect (anything|inquiries|questions|further)\b[^.]{0,50}\bto (them|him|her|the (banker|advisor))/i,
+];
+
+export function detectLiveProcess(activity = []) {
+  for (const a of activity) {
+    const text = `${a.subject || ""} ${a.note || ""} ${a.body || ""}`;
+    if (PROCESS_NEGATION.test(text)) continue;
+    if (PROCESS_PATTERNS.some((re) => re.test(text))) return true;
+  }
+  return false;
+}
+
 export function computeConversationSignals(target, today = new Date()) {
   const acts = [...(target.activity || [])].sort((a, b) => a.date.localeCompare(b.date));
   if (!acts.length) {
@@ -127,6 +158,21 @@ export function computeConversationSignals(target, today = new Date()) {
       ? "This relationship has already survived a year-plus gap once — silence here is not death."
       : "No extreme gaps in the record.",
   });
+
+  // 7. Live sell-side process — trumps everything else the history says.
+  // Shown first in the factor breakdown: it is why likelihood floors at 100
+  // the moment we act to join (see applyAction in state.js).
+  if (detectLiveProcess(acts)) {
+    signals.unshift({
+      id: "c-process",
+      label: "Live transaction process",
+      value: "Seller engaged a banker — formal process underway",
+      contribution: +10,
+      source: "conversation",
+      detail:
+        "The owner has already decided to transact — likelihood is effectively certain, and floors at 100 once we act to join the process. The open question is whether WE win it: that contest lives in the close-probability breakdown.",
+    });
+  }
 
   return signals;
 }

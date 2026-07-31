@@ -13,6 +13,7 @@
 import { seedTargets } from "./data/targets.js";
 import { loadDb, persistDb, persistDbNow, emptyDb, storageMode } from "./store.js";
 import { newExclusivity } from "./exclusivity.js";
+import { detectLiveProcess } from "./conversation.js";
 
 // Seed identity is a fingerprint of the seed CONTENT, so any edit to
 // targets.js re-migrates the demo records on next boot automatically —
@@ -218,6 +219,11 @@ export function applyAction(targetId, actionId) {
   const before = { ...target.scores };
   target.scores.likelihood = Math.min(99, target.scores.likelihood + effect.likelihood);
   target.scores.close = Math.min(99, target.scores.close + effect.close);
+  // A live sell-side process in the history (seller engaged a banker, we're
+  // invited in) means the owner IS transacting: approving any action on such
+  // an account floors likelihood at certainty. Close probability still moves
+  // by the blocker breakdown above — the contest left is whether WE win it.
+  if (detectLiveProcess(target.activity)) target.scores.likelihood = 100;
   target.scoreHistory.push(target.scores.likelihood);
 
   const blocker = target.blockers.find((b) => b.id === effect.blockerId);
