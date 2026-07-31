@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { analyzeTarget, executeAction, simulateReply, generateBrief } from "../api.js";
 import { useAnimatedNumber } from "../hooks.js";
 import AccountDetails from "./AccountDetails.jsx";
+import ActivitySynth from "./ActivitySynth.jsx";
 import CompanyLogo from "./CompanyLogo.jsx";
 import { DueBadge } from "./MyDay.jsx";
 import {
@@ -60,16 +61,30 @@ function Meter({ label, value, sub, tone, onClick, hint }) {
   );
 }
 
-function Panel({ title, tag, children, tone }) {
+function Panel({ title, tag, children, tone, action }) {
   return (
     <section className={`panel ${tone ? `panel-${tone}` : ""}`}>
       <div className="panel-head">
         <h3>{title}</h3>
-        {tag && <span className="panel-tag">{tag}</span>}
+        <span className="panel-head-right">
+          {tag && <span className="panel-tag">{tag}</span>}
+          {action}
+        </span>
       </div>
       {children}
     </section>
   );
+}
+
+// "analyzed 2h ago"-style relative timestamp.
+function ago(iso) {
+  if (!iso) return "earlier";
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 48) return `${hrs}h ago`;
+  return `${Math.round(hrs / 24)}d ago`;
 }
 
 // Headline-first panel: one punchy line, detail behind a toggle.
@@ -323,6 +338,7 @@ function TimelineItem({ a }) {
             {a.direction === "in" ? <ArrowDownLeft size={9} /> : <ArrowUpRight size={9} />} {a.direction === "in" ? "IN" : "OUT"}
           </span>{" "}
           {a.date} · {a.rep} · {a.type}
+          {a.contact && <> · with {a.contact}</>}
         </div>
         {a.subject && <div className="tl-subject">{a.subject}</div>}
         <div className="tl-note">{a.note}</div>
@@ -339,7 +355,7 @@ function TimelineItem({ a }) {
   );
 }
 
-export default function WarRoom({ target, onBack, patchTarget, onActionExecuted }) {
+export default function WarRoom({ target, onBack, patchTarget, onActionExecuted, onLog }) {
   const [trace, setTrace] = useState([]);
   const [analysis, setAnalysis] = useState(null);
   const [tab, setTab] = useState("intelligence");
@@ -355,27 +371,97 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
   const started = useRef(false);
 
   const [analysisMeta, setAnalysisMeta] = useState(target.analysisMeta || null);
+  const [staleInfo, setStaleInfo] = useState(null); // "Update available" affordance
+  const [synthOpen, setSynthOpen] = useState(false);
+  const analysisRunId = useRef(0);
 
   function runAnalysis(force) {
+    // Run-id token: a newer run supersedes any in-flight stream, so late
+    // trace lines or a stale result can never clobber the current one.
+    const runId = ++analysisRunId.current;
     if (force) {
       setAnalysis(null);
-      setTrace([]);
+      setTrace((prev) => (prev.length ? prev : []));
     }
+    setStaleInfo(null);
     analyzeTarget(target.id, {
-      onTrace: (t) => setTrace((prev) => [...prev, t.text]),
+      onTrace: (t) => {
+        if (analysisRunId.current !== runId) return;
+        setTrace((prev) => [...prev, t.text]);
+      },
       onAnalysis: (payload) => {
+        if (analysisRunId.current !== runId) return;
         setAnalysis(payload.analysis);
         setAnalysisMeta(payload.meta || null);
-        patchTarget(target.id, { analysisCache: payload.analysis, analysisMeta: payload.meta || null });
+        setStaleInfo(null);
+        patchTarget(target.id, {
+          analysisCache: payload.analysis,
+          analysisMeta: payload.meta || null,
+          analysisState: { status: "fresh", analyzedAt: payload.meta?.generatedAt, source: payload.meta?.source },
+          analysisAutoRefresh: false,
+        });
       },
-    }, force).catch(() => setAnalysis(target.cachedAnalysis));
+    }, force).catch(() => {
+      if (analysisRunId.current !== runId) return;
+      // Stream cut off: fall back to the stored analysis, then the seed one.
+      setAnalysis((a) => a || target.analysisCache || target.cachedAnalysis);
+    });
   }
 
+  // Cached Intelligence: analyze once, refresh on demand or on notable change.
+  //   fresh → render the stored analysis instantly (no SSE, no skeletons)
+  //   stale → render stored + "Update available" affordance (manual refresh)…
+  //   …except inbound-activity staleness, which auto-runs — a reply is the
+  //   highest-signal event and the agent should visibly react to it.
+  //   none  → full analysis run with the agent-trace treatment (first open).
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    runAnalysis(false);
+    const st = target.analysisState;
+    if (target.analysisCache && st?.status === "fresh") {
+      setAnalysis(target.analysisCache);
+      setAnalysisMeta(target.analysisMeta || null);
+      setTrace([
+        `Analysis restored from store — computed ${ago(st.analyzedAt)} (${st.source === "claude-opus-5" ? "live model" : "cached intelligence"})`,
+        "Nothing notable changed since — skipping re-analysis. ↻ Re-analyze for a fresh read.",
+      ]);
+    } else if (target.analysisCache && st?.status === "stale" && !st.autoRefresh) {
+      setAnalysis(target.analysisCache);
+      setAnalysisMeta(target.analysisMeta || null);
+      setStaleInfo(st);
+      setTrace([
+        `Analysis from ${ago(st.analyzedAt)} — since then: ${(st.reasons || []).join("; ")}`,
+        "Rendering last analysis. Update available — re-analyze when ready.",
+      ]);
+    } else {
+      if (st?.status === "stale" && st.autoRefresh) {
+        setTrace(["Inbound activity since last analysis — the agent re-reads the record automatically"]);
+      }
+      runAnalysis(!!target.analysisCache);
+    }
   }, [target.id]);
+
+  // Activity added via the synthesizer: timeline/arc/indicators recompute from
+  // the returned record; inbound additions re-analyze live, others mark stale.
+  function handleSynthCommitted(result) {
+    patchTarget(target.id, {
+      activity: result.target.activity,
+      conversationSignals: result.target.conversationSignals,
+      analysisState: result.target.analysisState,
+      analysisAutoRefresh: result.target.analysisAutoRefresh,
+    });
+    if (result.logEntry) onLog?.(result.logEntry);
+    setTrace((prev) => [
+      ...prev,
+      `${result.added} activit${result.added === 1 ? "y" : "ies"} synthesized into the timeline (${result.target.activity.length} total)`,
+    ]);
+    if (result.hasInbound) {
+      setTrace((prev) => [...prev, "Inbound touch detected in the added history — re-analyzing now"]);
+      runAnalysis(true);
+    } else if (analysis) {
+      setStaleInfo({ status: "stale", reasons: ["new activity logged"], analyzedAt: analysisMeta?.generatedAt });
+    }
+  }
 
   // Auto-scroll ONLY the trace panel's own scrollbar — never the page.
   useEffect(() => {
@@ -403,6 +489,8 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
       blockers: target.blockers.map((b) =>
         b.id === result.blockerId ? { ...b, status: "in-motion" } : b
       ),
+      // Keep the client timeline in step with the server-side activity write.
+      ...(result.activityEntry ? { activity: [...target.activity, result.activityEntry] } : {}),
     });
     setRescoreNote(result.reasoning.rescoreRationale);
     setTrace((prev) => [
@@ -412,6 +500,12 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
     setExecutedActions((prev) => [...prev, action.id]);
     onActionExecuted(result);
     setExecuting(false);
+    // Approved action = notable change: scores and blockers moved, so the
+    // stored analysis is stale. Manual affordance — no auto re-run. The
+    // patched analysisState keeps the App-held copy honest for the next open.
+    const staleAction = { status: "stale", reasons: ["action executed — blockers moved"], autoRefresh: false, analyzedAt: analysisMeta?.generatedAt };
+    setStaleInfo(staleAction);
+    patchTarget(target.id, { analysisState: staleAction });
   }
 
   const blockedCount = target.blockers.filter(isOpenBlocker).length;
@@ -452,6 +546,10 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
       replySimulated: true,
       predictionOutcome: result.predictionCheck,
       recommendedOverride: result.recommendedOverride,
+      // Inbound reply = highest-signal invalidation: next open auto-refreshes
+      // (this room keeps its live payoff panels exactly as-is).
+      analysisState: { status: "stale", reasons: ["new inbound activity"], autoRefresh: true, analyzedAt: analysisMeta?.generatedAt },
+      analysisAutoRefresh: true,
     });
     setRescoreNote(
       `Reply received ${sim.daysLater} days after outreach — archetype prediction confirmed. Likelihood ${result.before.likelihood}→${result.after.likelihood}, close ${result.before.close}→${result.after.close}.`
@@ -547,6 +645,15 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
         <FactorModal target={target} analysis={analysis} mode={factorModal} onClose={() => setFactorModal(null)} />
       )}
 
+      {synthOpen && (
+        <ActivitySynth
+          targetId={target.id}
+          company={target.company}
+          onClose={() => setSynthOpen(false)}
+          onCommitted={handleSynthCommitted}
+        />
+      )}
+
       <div className="wr-grid">
         {/* ── Left: meters + activity ── */}
         <div className="wr-left">
@@ -581,7 +688,19 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
             </div>
           )}
 
-          <Panel title="Activity" tag={`${target.activity.length} touches · all logged`}>
+          <Panel
+            title="Activity"
+            tag={`${target.activity.length} touches · all logged`}
+            action={
+              <button
+                className="panel-add-btn"
+                title="Paste raw interaction history — the agent synthesizes it into structured activity"
+                onClick={() => setSynthOpen(true)}
+              >
+                + Add
+              </button>
+            }
+          >
             {target.activity.length >= 3 && (
               <div className="arc-wrap">
                 <SentimentArc activity={target.activity} />
@@ -626,8 +745,20 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
             </button>
             {tab === "intelligence" && analysis && (
               <span className="tab-meta">
-                {analysisMeta?.source === "claude-opus-5" ? "live analysis" : "cached analysis"}
-                {analysisMeta?.generatedAt && ` · ${new Date(analysisMeta.generatedAt).toLocaleTimeString()}`}
+                {staleInfo ? (
+                  <button
+                    className="stale-pill"
+                    title={`Since last analysis: ${(staleInfo.reasons || []).join("; ")}`}
+                    onClick={() => runAnalysis(true)}
+                  >
+                    <Zap size={10} /> Update available — re-analyze
+                  </button>
+                ) : (
+                  <>
+                    {analysisMeta?.source === "claude-opus-5" ? "live analysis" : "cached analysis"}
+                    {analysisMeta?.generatedAt && ` · analyzed ${ago(analysisMeta.generatedAt)}`}
+                  </>
+                )}
                 <button className="insight-more" style={{ padding: 0, marginLeft: 10 }} onClick={() => runAnalysis(true)}>
                   <RotateCcw size={11} /> Re-analyze
                 </button>

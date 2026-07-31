@@ -13,6 +13,7 @@ export default function NewAccount({ owners, onClose, onCreate }) {
     accountOwner: owners.includes("Kevin Jay") ? "Kevin Jay" : owners[0] || "Kevin Jay",
     hqCity: "",
     hqCountry: "",
+    activityText: "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -85,6 +86,16 @@ export default function NewAccount({ owners, onClose, onCreate }) {
             <label className="na-field">
               <span>HQ Country</span>
               <input className="list-filter na-input" value={form.hqCountry} onChange={set("hqCountry")} placeholder="e.g. US" />
+            </label>
+            <label className="na-field na-wide">
+              <span>Activity History (optional)</span>
+              <textarea
+                className="list-filter na-input synth-paste-inline"
+                rows={5}
+                value={form.activityText}
+                onChange={set("activityText")}
+                placeholder={"Paste raw interaction history — notes, CRM exports, email logs. After enrichment, the agent synthesizes it into structured activity records you review before they're added.\n\ne.g.  2023-04-11: E1 intro email, no reply.  May 3, 2024 — CEO replied: \"talk to our banker\"…"}
+              />
             </label>
           </div>
 

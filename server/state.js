@@ -131,15 +131,17 @@ function migrateSeeds() {
   state.targets = [...seedTargets().map(buildSeedAccount), ...userAccounts];
 }
 
-// ⟲ Demo reset: restore the demo companies to their original seeded state but
-// preserve user-created accounts and saved Insights definitions. Log/task
-// entries tied to demo accounts are cleared with them.
+// ⟲ FULL demo reset: return the app to exactly the original seeded state.
+// User-created accounts are deleted along with all their associated data —
+// the log and task lists are cleared outright, so nothing references a
+// removed account afterwards. Saved Insights definitions survive: they are
+// dashboard-level query specs over whatever accounts exist, not account data.
+// (Startup is different — init()/migrateSeeds() refreshes seed records while
+// PRESERVING user accounts; only this explicit reset wipes them.)
 export function resetState() {
-  const seedIds = new Set(seedTargets().map((t) => t.id));
-  const isUserEntry = (e) => e.targetId && !seedIds.has(e.targetId);
-  migrateSeeds();
-  state.log = state.log.filter(isUserEntry);
-  state.tasks = state.tasks.filter(isUserEntry);
+  state.targets = seedTargets().map(buildSeedAccount);
+  state.log = [];
+  state.tasks = [];
   state.digest = null;
   persist();
 }

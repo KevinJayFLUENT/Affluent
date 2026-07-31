@@ -21,10 +21,11 @@ zero network risk. On Vercel, set `ANTHROPIC_API_KEY` in project env vars.
 1. **Start on Mission Control** — the agent's read of your day: the weekly
    portfolio sweep digest ("Run sweep"), touches due (Merritt overdue, Vantage
    today), and open agent tasks.
-2. **Pipeline** — ten accounts (two deal leads: Kevin Jay & Nathan Lim) in a Salesforce-style list with location flags with KPI tiles
+2. **Pipeline** — ten accounts (two deal leads: Kevin Jay & Nathan Lim) in a
+   Salesforce-style list with location flags and KPI tiles
    (avg likelihood, catalysts, touches due, tasks). The enrichment sweep runs on
-   load: signal pills land, scores tick, sparklines draw, and **Vantage Permit
-   Systems flares "Catalyst"** (48 → 63). Click the Catalysts tile to filter;
+   load: signal pills land, scores tick, sparklines draw, and **Vantage
+   Software flares "Catalyst"** (48 → 63). Click the Catalysts tile to filter;
    click any signals pill to expand the evidence; hover anything for an explanation.
 3. **Open Vantage** — the War Room:
    - Highlights band (stage, scores, next touch, owner, NDA) + sentiment arc over
@@ -40,6 +41,51 @@ zero network risk. On Vercel, set `ANTHROPIC_API_KEY` in project env vars.
    talking points, landmines ("do not apologize again — you already did on Oct 8").
 6. `⟲` resets everything for the next run-through.
 
+## Activity Synthesizer — paste raw logs, get structured activity
+
+Accounts often arrive with years of history in Word docs, CRM exports, or notes.
+Paste it raw; the agent synthesizes structured activity records.
+
+- **Where:** the "New" account modal has an *Activity History (optional)* box
+  (synthesis runs after enrichment), and every War Room's Activity panel has a
+  **+ Add** button for existing accounts.
+- **How it works:** `POST /api/activity/synthesize` converts the paste into
+  records matching the exact timeline schema — date, direction (IN/OUT), rep
+  (first-person entries map to the current user), contact (nullable), channel
+  (email / call / meeting / LinkedIn, sequence codes like E1/RCE preserved in
+  the subject), subject, note/body, and a sentiment consistent with the arc's
+  categories. Everything is validated server-side; entries with unparseable
+  dates are **flagged, never guessed**.
+- **Review before commit:** synthesized records land in an editable table
+  (date, direction, rep, contact, type, subject, sentiment). Only "Looks good —
+  add N activities" writes them (`POST /api/activity/commit`). After commit the
+  timeline, touch counts, sentiment arc, and conversation indicators all
+  recompute — synthesized activity is indistinguishable from seeded activity.
+- **Offline:** without an API key a deterministic parser (date-anchored
+  splitting + keyword heuristics) runs instead — good-enough, same flow.
+
+## Cached Intelligence — analyze once, refresh on notable change
+
+Each analysis is stored per account with an `analyzedAt` timestamp and a
+fingerprint of its inputs (activity count + latest entry, scores, stage,
+blocker states, signal set). Opening a War Room with a fresh stored analysis
+renders instantly — no agent run, no skeletons — with an "analyzed 2h ago"
+timestamp. ↻ Re-analyze always forces a fresh run with the full agent trace.
+
+The stored analysis goes stale when something **notable** happens:
+1. new activity is added (synthesizer, ⏩ simulate, any path) — an **inbound**
+   touch auto-runs the re-analysis on next open, since a reply is the
+   highest-signal event in the system;
+2. an approved action executes (scores/blockers move);
+3. enrichment surfaces a new signal or catalyst;
+4. stage changes;
+5. likelihood or close probability moves ≥5 points.
+
+Everything else — opening/closing accounts, navigation, page refresh, task
+checkboxes, the exclusivity countdown — never invalidates. Stale-but-not-inbound
+shows a subtle **"Update available — re-analyze"** pill instead of auto-running.
+`⟲` reset restores the seeded state so rehearsals start from a known place.
+
 ## Architecture
 
 - `server/` — Express (local: `server/index.js`; Vercel: `api/index.js`, same app).
@@ -49,8 +95,11 @@ zero network risk. On Vercel, set `ANTHROPIC_API_KEY` in project env vars.
     `/api/accounts/:id/enrich` runs the AI enrichment pass (full scraping schema,
     signals, financial estimates — deterministic mock without a key)
   - `/api/enrich` — signal sweep per account
-  - `/api/analyze` — SSE: agent trace + structured-JSON analysis (claude-opus-5,
-    cached server-side per account; `force` re-analyzes)
+  - `/api/analyze` — SSE: agent trace + structured-JSON analysis (claude-opus-5).
+    Results persist per account with an input fingerprint; see *Cached
+    Intelligence* above (`force` re-analyzes)
+  - `/api/activity/synthesize` + `/api/activity/commit` — the Activity
+    Synthesizer: raw paste → validated structured records → review → commit
   - `/api/act` — executes approved actions: real rescoring rationale, side effects
     that persist to the database (scores, blockers, tasks, log, next-touch cadence)
   - `/api/simulate` — plays a target's scripted predicted reply (the payoff moment)
@@ -75,9 +124,12 @@ zero network risk. On Vercel, set `ANTHROPIC_API_KEY` in project env vars.
   ten demo companies migrate from `targets.js` into the DB as ordinary records
   (origin: `seed`) with staggered exclusivity backfill (Active / Expiring Soon /
   Expired); from then on they're editable and re-scorable through the same code
-  paths as user-created accounts. `targets.js` remains only as the seed source.
-  `⟲` reset restores the demo companies to their seeded state but preserves
-  user-created accounts and saved Insights definitions.
+  paths as user-created accounts. `targets.js` remains only as the seed source
+  (edits to it re-migrate seed records on restart while preserving user
+  accounts). `⟲` is a **full demo reset**: user-created accounts and their
+  log/task entries are deleted and exactly the original seeded companies
+  remain. Saved Insights definitions (dashboard-level query specs, not account
+  data) survive.
 - `server/exclusivity.js` — 6-month exclusivity records tied to the Account Owner;
   status (Active / Expiring Soon / Expired) is always computed from the dates.
 - `server/accounts.js` — new-account skeleton + AI enrichment (exact 20-field

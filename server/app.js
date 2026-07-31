@@ -8,15 +8,19 @@ import { analyzeTarget, rescoreAfterAction, writeDigest, prepMeetingBrief, aiAva
 import { computeConversationSignals, conversationSummaryLine } from "./conversation.js";
 import { withStatus } from "./exclusivity.js";
 import { buildAccount, enrichAccount } from "./accounts.js";
+import { analysisFingerprint, analysisState, flagInboundActivity } from "./analysis.js";
+import { synthesizeActivity, validateRecords } from "./synthesize.js";
 import { accountRows, FIELD_CATALOG } from "./insights/derive.js";
 import { applyFilters, humanizeFilter } from "./insights/engine.js";
 import insightsRouter from "./insights/routes.js";
 
-// Response decoration: computed conversation indicators + live exclusivity
-// status (Active / Expiring Soon / Expired is derived from dates, never stored).
+// Response decoration: computed conversation indicators, live exclusivity
+// status (derived from dates, never stored), and the intelligence-cache state
+// (fresh / stale / none — compared against the stored analysis fingerprint).
 const withConversation = (t) => ({
   ...t,
   conversationSignals: computeConversationSignals(t),
+  analysisState: analysisState(t),
   details: t.details ? { ...t.details, exclusivity: withStatus(t.details.exclusivity) } : t.details,
 });
 
@@ -171,6 +175,13 @@ app.post("/api/analyze", async (req, res) => {
 
   const conversationSignals = computeConversationSignals(target);
 
+  // Snapshot the input fingerprint (and the auto-refresh flag) NOW — the
+  // model prompt serializes the record at this moment, so anything that
+  // mutates the account mid-run must read as a NEW change against this
+  // analysis, not get absorbed into it.
+  const inputFingerprint = analysisFingerprint(target);
+  const autoRefreshAtStart = !!target.analysisAutoRefresh;
+
   // Kick off the real analysis immediately; trace steps pace alongside it.
   let analysisSource = "cached";
   const analysisPromise = aiAvailable()
@@ -214,9 +225,19 @@ app.post("/api/analyze", async (req, res) => {
     }
     send("trace", { text: "Synthesizing analysis (claude-opus-5)…" });
     const analysis = await analysisPromise;
-    const meta = { generatedAt: new Date().toISOString(), source: analysisSource };
+    const meta = {
+      generatedAt: new Date().toISOString(),
+      source: analysisSource,
+      // Inputs this analysis was computed from (snapshotted at run START, when
+      // the record was serialized into the prompt) — staleness is decided by
+      // comparing this fingerprint to the account's live state at read time.
+      fingerprint: inputFingerprint,
+    };
     target.analysisCache = analysis;
     target.analysisMeta = meta;
+    // Consume the auto-refresh flag only if it was set when this run started;
+    // an inbound touch landing mid-run must still trigger the next refresh.
+    if (autoRefreshAtStart) target.analysisAutoRefresh = false;
     persist();
     send("trace", { text: "Analysis complete — rendering War Room" });
     send("analysis", { targetId: target.id, analysis, meta, target });
@@ -285,13 +306,14 @@ app.post("/api/act", async (req, res) => {
   state.tasks.unshift(task);
 
   // Also write it into the target's own activity timeline
-  target.activity.push({
+  const activityEntry = {
     date: new Date().toISOString().slice(0, 10),
     rep: "Agent (approved by Kevin Jay)",
     type: "action",
     sentiment: "positive",
     note: actionLabel || actionId,
-  });
+  };
+  target.activity.push(activityEntry);
   persist();
 
   res.json({
@@ -301,6 +323,7 @@ app.post("/api/act", async (req, res) => {
     reasoning,
     logEntry,
     task,
+    activityEntry,
     board: rankedTargets().map((t) => ({ id: t.id, likelihood: t.scores.likelihood })),
   });
 });
@@ -328,6 +351,9 @@ app.post("/api/simulate", (req, res) => {
   if (resolved) resolved.status = "resolved";
 
   target.activity.push(sim.reply);
+  // Inbound reply = highest-signal event: the stored analysis auto-refreshes
+  // on next open (the in-room payoff panels render live as before).
+  flagInboundActivity(target);
   target.replySimulated = true;
   target.predictionOutcome = sim.predictionCheck;
   target.recommendedOverride = sim.nextRecommendedAction;
@@ -474,6 +500,60 @@ app.post("/api/accounts/:id/enrich", async (req, res) => {
     console.error("account enrich error:", err.message);
     res.status(500).json({ error: "enrichment failed", detail: err.message });
   }
+});
+
+// ── Activity Synthesizer ──────────────────────────────────────────────────
+// Step 1: synthesize — raw pasted text → structured records + flagged issues.
+// Nothing is written; the client shows an editable review table.
+app.post("/api/activity/synthesize", async (req, res) => {
+  const text = String(req.body?.text || "").trim();
+  if (!text) return res.status(400).json({ error: "text is required" });
+  if (text.length > 60000) return res.status(400).json({ error: "paste is too large (60k char limit)" });
+  const target = req.body?.targetId ? getTarget(req.body.targetId) : null;
+  try {
+    const result = await synthesizeActivity(text, { company: target?.company });
+    res.json(result);
+  } catch (err) {
+    console.error("synthesize error:", err.message);
+    res.status(500).json({ error: "synthesis failed", detail: err.message });
+  }
+});
+
+// Step 2: commit — validated records are appended to the account's activity
+// (kept date-sorted), the conversation indicators recompute on read, and the
+// intelligence cache invalidates via the fingerprint. Inbound records also
+// set the auto-refresh flag — a reply is the highest-signal event.
+app.post("/api/activity/commit", async (req, res) => {
+  const target = getTarget(req.body?.targetId);
+  if (!target) return res.status(404).json({ error: "unknown target" });
+
+  const { records, issues } = validateRecords(req.body?.records, {});
+  if (!records.length) return res.status(400).json({ error: "no valid records to add", issues });
+
+  target.activity = [...target.activity, ...records].sort((a, b) =>
+    String(a.date).localeCompare(String(b.date))
+  );
+  const hasInbound = records.some((r) => r.direction === "in");
+  if (hasInbound) flagInboundActivity(target);
+
+  const logEntry = {
+    id: `log-${Date.now()}`,
+    date: new Date().toISOString(),
+    targetId: target.id,
+    company: target.company,
+    text: `${records.length} activit${records.length === 1 ? "y" : "ies"} synthesized from pasted history`,
+    detail: `${records.filter((r) => r.direction === "in").length} inbound · ${records.filter((r) => r.direction === "out").length} outbound. Conversation indicators and intelligence recompute from the updated log.`,
+  };
+  state.log.unshift(logEntry);
+
+  await persistNow();
+  res.json({
+    target: withConversation(target),
+    added: records.length,
+    hasInbound,
+    issues,
+    logEntry,
+  });
 });
 
 // ── Generic query: execute a filter definition against the live store ────

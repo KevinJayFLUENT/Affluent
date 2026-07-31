@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { fetchTargets, enrichTarget, toggleTask, runDigest, createAccount, enrichNewAccount } from "./api.js";
+import { fetchTargets, enrichTarget, toggleTask, runDigest, createAccount, enrichNewAccount, synthesizeActivity } from "./api.js";
+import ActivitySynth from "./components/ActivitySynth.jsx";
 import Board from "./components/Board.jsx";
 import WarRoom from "./components/WarRoom.jsx";
 import MyDay from "./components/MyDay.jsx";
@@ -22,6 +23,7 @@ export default function App() {
   const [digest, setDigest] = useState(null);
   const [digestRunning, setDigestRunning] = useState(false);
   const [showNewAccount, setShowNewAccount] = useState(false);
+  const [synthReview, setSynthReview] = useState(null); // post-creation activity review
   const sweepStarted = useRef(false);
 
   useEffect(() => {
@@ -93,6 +95,8 @@ export default function App() {
 
   // "New" account: create instantly (row appears in scanning state), then run
   // the AI enrichment pass with the same sweep treatment seeded accounts get.
+  // If the agent pasted raw history, it's synthesized after enrichment and
+  // presented for review — records are only written on confirm.
   async function handleCreateAccount(input) {
     const { target, logEntry } = await createAccount(input);
     setTargets((prev) => [...prev, target]);
@@ -110,6 +114,28 @@ export default function App() {
       console.error("enrichment failed:", err);
       showToast(`${target.company}: enrichment failed — account saved, retry from the row`);
     }
+    if (input.activityText?.trim()) {
+      try {
+        const synth = await synthesizeActivity(input.activityText.trim(), target.id);
+        setSynthReview({
+          targetId: target.id,
+          company: target.company,
+          records: synth.records,
+          issues: synth.issues,
+          source: synth.source,
+          text: input.activityText.trim(), // preserved so nothing pasted is lost
+        });
+      } catch (err) {
+        console.error("activity synthesis failed:", err);
+        showToast(`${target.company}: activity synthesis failed — use + Add in the War Room to retry`);
+      }
+    }
+  }
+
+  function handleSynthCommitted(result) {
+    setTargets((prev) => prev.map((p) => (p.id === result.target.id ? { ...p, ...result.target } : p)));
+    setLog((prev) => (result.logEntry ? [result.logEntry, ...prev] : prev));
+    showToast(`${result.added} activit${result.added === 1 ? "y" : "ies"} added to ${result.target.company} — indicators recomputed`);
   }
 
   const owners = [...new Set(targets.map((t) => t.details?.accountOwner).filter(Boolean))].sort();
@@ -158,7 +184,7 @@ export default function App() {
           <span className="user-chip">Kevin Jay · Corp Dev</span>
           <button
             className="reset-btn"
-            title="Reset demo state and replay the enrichment sweep"
+            title="Full demo reset — deletes user-created accounts and restores the original 10 seeded companies"
             onClick={async () => {
               await fetch("/api/reset", { method: "POST" });
               window.location.reload();
@@ -192,6 +218,19 @@ export default function App() {
         />
       )}
 
+      {synthReview && (
+        <ActivitySynth
+          targetId={synthReview.targetId}
+          company={synthReview.company}
+          initialRecords={synthReview.records}
+          initialIssues={synthReview.issues}
+          initialSource={synthReview.source}
+          initialText={synthReview.text}
+          onClose={() => setSynthReview(null)}
+          onCommitted={handleSynthCommitted}
+        />
+      )}
+
       {view.name === "insights" && (
         <Insights onOpenAccount={(id) => setView({ name: "warroom", targetId: id })} />
       )}
@@ -215,6 +254,7 @@ export default function App() {
           target={active}
           onBack={() => setView({ name: "board" })}
           patchTarget={patchTarget}
+          onLog={(entry) => setLog((prev) => [entry, ...prev])}
           onActionExecuted={({ task, logEntry }) => {
             setTasks((prev) => [task, ...prev]);
             setLog((prev) => [logEntry, ...prev]);

@@ -78,6 +78,27 @@ export async function enrichNewAccount(accountId) {
   return res.json();
 }
 
+// ── Activity Synthesizer ────────────────────────────────────────────────────
+export async function synthesizeActivity(text, targetId = null) {
+  const res = await fetch("/api/activity/synthesize", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, targetId }),
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "synthesis failed");
+  return res.json();
+}
+
+export async function commitActivity(targetId, records) {
+  const res = await fetch("/api/activity/commit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ targetId, records }),
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "commit failed");
+  return res.json();
+}
+
 // ── Insights: persistent Reports & Dashboards ──────────────────────────────
 export async function listInsights() {
   const res = await fetch("/api/insights/dashboards");
