@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAnimatedNumber } from "../hooks.js";
 import CompanyLogo from "./CompanyLogo.jsx";
 import { DueBadge, dueStatus } from "./MyDay.jsx";
-import { Zap, Gauge, CalendarClock, ClipboardList, ChevronDown, ChevronUp, TrendingUp } from "./Icons.jsx";
+import { Zap, Gauge, CalendarClock, ClipboardList, ChevronDown, ChevronUp, TrendingUp, X } from "./Icons.jsx";
 import Flag, { countryOf } from "./Flags.jsx";
 
 function scoreTone(v) {
@@ -171,7 +171,13 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay, 
   const [showFilters, setShowFilters] = useState(false);
   const [colFilters, setColFilters] = useState({});
   const setCF = (key, value) => setColFilters((f) => ({ ...f, [key]: value || undefined }));
-  const activeFilterCount = Object.values(colFilters).filter(Boolean).length + (catalystOnly ? 1 : 0);
+  const activeFilterCount =
+    Object.values(colFilters).filter(Boolean).length + (catalystOnly ? 1 : 0) + (query.trim() ? 1 : 0);
+  const clearAllFilters = () => {
+    setColFilters({});
+    setCatalystOnly(false);
+    setQuery("");
+  };
 
   // FLIP: rows glide to their new position when the ranking changes.
   const rowRefs = useRef(new Map());
@@ -330,13 +336,16 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay, 
           className={`filter-toggle ${showFilters || activeFilterCount ? "active" : ""}`}
           onClick={() => setShowFilters(!showFilters)}
         >
-          Filters{activeFilterCount > 0 && <span className="nav-badge">{activeFilterCount}</span>}
+          Filters{activeFilterCount > 0 && <span className="filter-badge">{activeFilterCount}</span>}
         </button>
-        {activeFilterCount > 0 && (
-          <button className="insight-more" onClick={() => { setColFilters({}); setCatalystOnly(false); }}>
-            Clear
-          </button>
-        )}
+        <button
+          className="filter-toggle filter-clear"
+          onClick={clearAllFilters}
+          disabled={activeFilterCount === 0}
+          title="Reset search, column filters, and the catalyst toggle"
+        >
+          <X size={12} /> Clear filters
+        </button>
         <span className="list-count">{rows.length} of {targets.length} account{targets.length === 1 ? "" : "s"}</span>
       </div>
 
