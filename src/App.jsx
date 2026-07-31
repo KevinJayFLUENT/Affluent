@@ -161,6 +161,7 @@ export default function App() {
         <MyDay
           targets={targets}
           tasks={tasks}
+          log={log}
           digest={digest}
           digestRunning={digestRunning}
           onOpen={(id) => setView({ name: "warroom", targetId: id })}

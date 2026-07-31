@@ -16,7 +16,7 @@ function Score({ value }) {
 }
 
 // Tiny score-history trend line.
-function Sparkline({ points = [] }) {
+export function Sparkline({ points = [] }) {
   if (points.length < 2) return <span className="spark spark-flat" />;
   const W = 52, H = 18, p = 2.5;
   const min = Math.min(...points), max = Math.max(...points);
