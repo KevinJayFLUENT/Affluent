@@ -33,6 +33,86 @@ function relativeTime(iso) {
   return hrs < 24 ? `${hrs}h ago` : `${Math.round(hrs / 24)}d ago`;
 }
 
+// Book analytics: two small predictive charts, computed client-side from
+// the scoped accounts. Plain SVG, no libraries — deterministic and safe.
+function BookCharts({ accounts }) {
+  const rows = [...accounts].sort((a, b) => b.scores.likelihood - a.scores.likelihood);
+  if (!rows.length) return <p className="muted">No accounts in this book.</p>;
+  const W = 330, L = 6, R = 36;
+  const barW = W - L - R;
+  const rowH = 32, H1 = rows.length * rowH + 4;
+  const touch = rows.filter((t) => t.nextTouch).sort((a, b) => a.nextTouch.due.localeCompare(b.nextTouch.due));
+  const H2 = touch.length * 24 + 32;
+  const tx = (d) => {
+    const dd = Math.max(0, Math.min(92, daysUntil(d)));
+    return 100 + (dd / 92) * (W - 108);
+  };
+  const dotColor = (d) => {
+    const s = dueStatus(d);
+    return s === "overdue" ? "#b91c1c" : s === "today" ? "#d97706" : "#2563eb";
+  };
+  return (
+    <>
+      <div className="chart-title">Likelihood to transact</div>
+      <svg viewBox={`0 0 ${W} ${H1}`} width="100%" role="img">
+        <title>Likelihood to transact by account</title>
+        {rows.map((t, i) => {
+          const y = i * rowH;
+          const v = t.scores.likelihood;
+          return (
+            <g key={t.id}>
+              <text x={L} y={y + 11} fontSize="10.5" fill="#4b5563">
+                {t.company.length > 30 ? t.company.slice(0, 29) + "…" : t.company}
+              </text>
+              <rect x={L} y={y + 15} width={barW} height={9} rx={3.5} fill="#f0f1f3" />
+              <rect x={L} y={y + 15} width={Math.max(4, (v / 100) * barW)} height={9} rx={3.5} fill="#2563eb" />
+              <text x={L + barW + 6} y={y + 23} fontSize="10.5" fontWeight="600" fill="#1f2937">{v}</text>
+            </g>
+          );
+        })}
+      </svg>
+
+      <div className="chart-title" style={{ marginTop: 16 }}>Touch cadence — next 90 days</div>
+      {!touch.length && <p className="muted">No scheduled touches.</p>}
+      {touch.length > 0 && (
+        <>
+          <svg viewBox={`0 0 ${W} ${H2}`} width="100%" role="img">
+            <title>Scheduled touches over the next 90 days</title>
+            {[0, 30, 60, 90].map((d) => {
+              const x = 100 + (d / 92) * (W - 108);
+              return (
+                <g key={d}>
+                  <line x1={x} y1={4} x2={x} y2={H2 - 18} stroke="#eef0f3" strokeWidth="1" />
+                  <text x={x} y={H2 - 6} fontSize="9.5" fill="#9ca3af" textAnchor="middle">
+                    {d === 0 ? "today" : `+${d}d`}
+                  </text>
+                </g>
+              );
+            })}
+            {touch.map((t, i) => {
+              const y = 12 + i * 24;
+              return (
+                <g key={t.id}>
+                  <text x={94} y={y + 3.5} fontSize="10" fill="#4b5563" textAnchor="end">{t.company.split(" ")[0]}</text>
+                  <line x1={100} y1={y} x2={W - 8} y2={y} stroke="#f3f4f6" strokeWidth="1" />
+                  <circle cx={tx(t.nextTouch.due)} cy={y} r="4.5" fill={dotColor(t.nextTouch.due)}>
+                    <title>{`${t.company} — ${t.nextTouch.due}: ${t.nextTouch.action}`}</title>
+                  </circle>
+                </g>
+              );
+            })}
+          </svg>
+          <div className="chart-legend">
+            <span><i style={{ background: "#b91c1c" }} /> overdue</span>
+            <span><i style={{ background: "#d97706" }} /> today</span>
+            <span><i style={{ background: "#2563eb" }} /> scheduled</span>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
 function TouchRow({ t, onOpen, upcoming }) {
   const days = daysUntil(t.nextTouch.due);
   return (
@@ -51,6 +131,11 @@ function TouchRow({ t, onOpen, upcoming }) {
 export default function MyDay({ targets, tasks, log = [], digest, onOpen, onToggleTask, onRunDigest, digestRunning }) {
   const [showDone, setShowDone] = useState(false);
   const [ownerFilter, setOwnerFilter] = useState("");
+  const [showCharts, setShowCharts] = useState(() => localStorage.getItem("mc-charts") !== "off");
+  const toggleCharts = (on) => {
+    setShowCharts(on);
+    localStorage.setItem("mc-charts", on ? "on" : "off");
+  };
   const autoRan = useRef(false);
   const owners = [...new Set(targets.map((t) => t.details?.accountOwner || t.owner.name))].sort();
   const ownerOf = (t) => t.details?.accountOwner || t.owner.name;
@@ -102,19 +187,35 @@ export default function MyDay({ targets, tasks, log = [], digest, onOpen, onTogg
             {ownerFilter && ` · viewing ${ownerFilter}'s book`}
           </p>
         </div>
-        <label className="owner-scope">
-          <span>Book</span>
-          <select className="col-filter" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
-            <option value="">All owners</option>
-            {owners.map((o) => <option key={o} value={o}>{o}</option>)}
-          </select>
-        </label>
+        <div className="mc-controls">
+          <label className="owner-scope">
+            <span>Book</span>
+            <select className="col-filter" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
+              <option value="">All owners</option>
+              {owners.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </label>
+          <label className="charts-toggle">
+            <input type="checkbox" checked={showCharts} onChange={(e) => toggleCharts(e.target.checked)} />
+            Analytics
+          </label>
+        </div>
       </div>
+
+      <div className={showCharts ? "myday-grid" : ""}>
+      <div className="myday-main">
 
       {/* Weekly portfolio sweep digest */}
       <section className="panel digest">
         <div className="panel-head">
-          <h3>Weekly Portfolio Sweep</h3>
+          <h3>
+            Weekly Portfolio Sweep
+            {digest && (
+              <span className="digest-scope">
+                · for {!digest.ownerScope || digest.ownerScope === "all" ? "all owners" : digest.ownerScope}
+              </span>
+            )}
+          </h3>
           <button
             className="digest-btn"
             onClick={() => onRunDigest(ownerFilter || null)}
@@ -277,6 +378,20 @@ export default function MyDay({ targets, tasks, log = [], digest, onOpen, onTogg
           ))}
         </div>
       </section>
+      </div>
+
+      {showCharts && (
+        <aside className="myday-rail">
+          <section className="panel">
+            <div className="panel-head">
+              <h3>Book Analytics</h3>
+              <span className="panel-tag">{ownerFilter || "all owners"} · live</span>
+            </div>
+            <BookCharts accounts={scoped} />
+          </section>
+        </aside>
+      )}
+      </div>
     </div>
   );
 }

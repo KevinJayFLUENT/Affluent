@@ -226,8 +226,12 @@ export default function App() {
       {toast && <div className="toast">{toast}</div>}
 
       <footer className="app-footer">
-        <FluentLogo size={22} />
-        <span>a Fluent Corporation operated tool</span>
+        <div className="footer-brand">
+          <FluentLogo size={24} />
+          <span className="footer-wordmark">Fluent</span>
+        </div>
+        <span className="footer-tagline">a Fluent Corporation operated tool</span>
+        <span className="footer-legal">© 2026 Fluent Corporation · Internal use only</span>
       </footer>
     </div>
   );

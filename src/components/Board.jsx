@@ -3,6 +3,7 @@ import { useAnimatedNumber } from "../hooks.js";
 import CompanyLogo from "./CompanyLogo.jsx";
 import { DueBadge, dueStatus } from "./MyDay.jsx";
 import { Zap, Gauge, CalendarClock, ClipboardList, ChevronDown, ChevronUp } from "./Icons.jsx";
+import Flag, { countryOf } from "./Flags.jsx";
 
 function scoreTone(v) {
   if (v >= 70) return "hot";
@@ -48,6 +49,8 @@ const COLUMNS = [
     tip: "Rank by likelihood to transact — re-ranks live as scores move." },
   { key: "company", label: "Account", get: (t) => t.company,
     tip: "The acquisition target. A catalyst tag means an external event just reversed the risk keeping this deal stuck." },
+  { key: "location", label: "Location", get: (t) => countryOf(t) + (t.location || ""),
+    tip: "Headquarters city and country, from enrichment." },
   { key: "stage", label: "Stage", get: (t) => t.details?.stage || t.stage,
     tip: "Where the account sits in our outreach funnel." },
   { key: "nexttouch", label: "Next Touch", get: (t) => t.nextTouch?.due || "9999",
@@ -206,6 +209,7 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay, 
     if (catalystOnly) out = out.filter((t) => t.enriched && t.signals.some((s) => s.catalyst));
     const f = colFilters;
     if (f.company) out = out.filter((t) => (t.company + " " + t.vertical).toLowerCase().includes(f.company.toLowerCase()));
+    if (f.location) out = out.filter((t) => ((t.location || "") + " " + countryOf(t) + " " + (t.details?.address || "")).toLowerCase().includes(f.location.toLowerCase()));
     if (f.stage) out = out.filter((t) => (t.details?.stage || t.stage) === f.stage);
     if (f.owner) out = out.filter((t) => (t.details?.accountOwner || t.owner.name) === f.owner);
     if (f.exclusivity) out = out.filter((t) => (t.details?.exclusivity?.status || "None") === f.exclusivity);
@@ -343,6 +347,7 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay, 
               <tr className="filter-row">
                 <th />
                 <th><input className="col-filter" placeholder="Contains…" value={colFilters.company || ""} onChange={(e) => setCF("company", e.target.value)} /></th>
+                <th><input className="col-filter" placeholder="City / country" value={colFilters.location || ""} onChange={(e) => setCF("location", e.target.value)} /></th>
                 <th>
                   <select className="col-filter" value={colFilters.stage || ""} onChange={(e) => setCF("stage", e.target.value)}>
                     <option value="">Any</option>
@@ -409,6 +414,10 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay, 
                         <div className="cell-vertical">{t.vertical}</div>
                       </div>
                     </div>
+                  </td>
+                  <td className="cell-loc" title={t.details?.address}>
+                    <Flag country={countryOf(t)} />
+                    <span>{t.location}</span>
                   </td>
                   <td className="cell-dim">{t.details?.stage || t.stage}</td>
                   <td className="cell-touch" title={t.nextTouch ? `${t.nextTouch.action} — ${t.nextTouch.reason}` : undefined}>

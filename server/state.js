@@ -18,7 +18,7 @@ import { newExclusivity } from "./exclusivity.js";
 // targets.js re-migrates the demo records on next boot automatically —
 // user-created accounts and saved insights definitions are always preserved.
 // Bump the prefix to force a re-migration even without a content change.
-const SEED_PREFIX = "v1:";
+const SEED_PREFIX = "v2:";
 
 function seedFingerprint() {
   const json = JSON.stringify(seedTargets());
@@ -38,6 +38,10 @@ const SEED_EXCLUSIVITY = {
   solenta: { owner: "Priya Raman", startDate: "2025-09-18" }, // → 2026-03-18 · Expired
   hartline: { owner: "Kevin Jay", startDate: "2026-04-22" }, // → 2026-10-22 · Active
   plexa: { owner: "Dana Whitfield", startDate: "2026-07-02" }, // → 2027-01-02 · Active
+  kestrel: { owner: "Nathan Lim", startDate: "2026-06-18" }, // → 2026-12-18 · Active
+  orbita: { owner: "Nathan Lim", startDate: "2026-02-11" }, // → 2026-08-11 · Expiring Soon
+  brightspan: { owner: "Nathan Lim", startDate: "2026-07-21" }, // → 2027-01-21 · Active
+  cobalt: { owner: "Nathan Lim", startDate: "2026-04-30" }, // → 2026-10-30 · Active
 };
 
 const withHistory = (t) => ({ ...t, scoreHistory: [t.scores.likelihood] });
