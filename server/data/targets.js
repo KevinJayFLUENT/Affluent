@@ -16,11 +16,11 @@ export function seedTargets() {
     {
       id: "vantage",
       nextTouch: {"due":"2026-07-30","action":"Send catalyst re-engagement to Ray Delgado","reason":"Catalyst is 5 weeks old and cooling — dead-deal-revival window is now."},
-      company: "Vantage Permit Systems",
+      company: "Vantage Software",
       vertical: "Municipal permitting & licensing software",
       location: "Boise, ID",
       hero: true,
-      brand: { color: "#1e4a8a", initials: "VP", mark: "permit" },
+      brand: { color: "#3b52ff", initials: "VS", mark: "vee" },
       stage: "Dormant — Run 1 died at APA (Oct 2025)",
       owner: {
         name: "Ray Delgado",
@@ -256,7 +256,7 @@ export function seedTargets() {
           llmIsVms: "yes", llmVertical: "govtech", llmSubVertical: "municipal permitting & licensing",
           llmTargetCustomer: "sub-50k-population municipalities", matchConfidence: 100,
           revenueModel: "SaaS / Subscription", llmRevenueModel: "saas_subscription",
-          websiteDescription: "Vantage Permit Systems provides permitting, licensing, and code-enforcement software purpose-built for small and mid-size municipalities.",
+          websiteDescription: "Vantage Software provides permitting, licensing, and code-enforcement software purpose-built for small and mid-size municipalities.",
           llmProductSummary: "Vantage provides permit intake, plan review, licensing, and inspection management software for municipal governments.",
           llmConfidence: 82,
         },
@@ -267,7 +267,7 @@ export function seedTargets() {
           { date: "2022-12-19", field: "Account Owner", from: "Dana Whitfield", to: "Marcus Lee" },
         ],
         opportunities: [
-          { name: "Vantage Permit Systems — Run 1", stage: "Closed Lost", amount: "$11.8M EV (1.9x parked)", closeDate: "2025-09-30" },
+          { name: "Vantage Software — Run 1", stage: "Closed Lost", amount: "$11.8M EV (1.9x parked)", closeDate: "2025-09-30" },
         ],
         notes: [
           { title: "APA Redline Summary — where it broke", date: "2025-10-01" },
@@ -329,10 +329,10 @@ export function seedTargets() {
     {
       id: "novaris",
       nextTouch: {"due":"2026-10-15","action":"Pre-emptive call with Copper Gate ops partner","reason":"Window set by the sponsor himself: after Q3 marks land."},
-      company: "Novaris Health Scheduling",
+      company: "Novaris Health Cloud",
       vertical: "Clinic & therapy scheduling software",
       location: "Minneapolis, MN",
-      brand: { color: "#0b7285", initials: "NH" },
+      brand: { light: true, initials: "NH", mark: "novaris" },
       stage: "Early dialogue — PE holder signaling",
       owner: {
         name: "Copper Gate Partners (Tom Brandt, CEO)",
@@ -415,10 +415,10 @@ export function seedTargets() {
     {
       id: "merritt",
       nextTouch: {"due":"2026-07-29","action":"Unstick the NDA at Ray Hutchins (his counsel)","reason":"3+ weeks in legal review — momentum quietly dying. OVERDUE."},
-      company: "Merritt Fuel Systems",
+      company: "Merritt FuelWare",
       vertical: "Back-office software for fuel jobbers",
       location: "Tulsa, OK",
-      brand: { color: "#b45309", initials: "MF" },
+      brand: { light: true, initials: "MF", mark: "merritt" },
       stage: "Exploring — NDA in legal review",
       owner: {
         name: "Doc Merritt",
@@ -506,10 +506,10 @@ export function seedTargets() {
     {
       id: "solenta",
       nextTouch: {"due":"2026-09-16","action":"Send the anniversary note — his date, to the day","reason":"Date-setter pattern: converts only when you keep the exact date."},
-      company: "Solenta Labs",
+      company: "Solenta LabWorks",
       vertical: "LIMS for water & environmental testing labs",
       location: "Madison, WI",
-      brand: { color: "#5f3dc4", initials: "SL" },
+      brand: { light: true, initials: "SL", mark: "solenta" },
       stage: "Nurture — 'ask me next year' (it's next year)",
       owner: {
         name: "Dev Okonkwo",
@@ -593,10 +593,10 @@ export function seedTargets() {
     {
       id: "hartline",
       nextTouch: {"due":"2026-08-11","action":"Erie shop visit — he has asked twice","reason":"Old-school seller: only in-person counts. Two rivals still dialing."},
-      company: "Hartline Foundry Systems",
+      company: "Hartline FoundryWorks",
       vertical: "ERP for metal casting & foundry shops",
       location: "Erie, PA",
-      brand: { color: "#9a3412", initials: "HF" },
+      brand: { light: true, initials: "HF", mark: "hartline" },
       stage: "Early — relationship building",
       owner: {
         name: "Walt Hartline",
@@ -675,7 +675,7 @@ export function seedTargets() {
     {
       id: "plexa",
       nextTouch: {"due":"2026-09-08","action":"Founder intro before Dockside Expo","reason":"Relationship-first seed; conference is the natural first touch."},
-      company: "Plexa Marina Management",
+      company: "Plexa Marina Cloud",
       vertical: "Marina & boatyard management SaaS",
       location: "Annapolis, MD",
       brand: { color: "#364fc7", initials: "PX" },

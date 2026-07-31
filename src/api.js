@@ -30,8 +30,12 @@ export async function toggleTask(taskId, done) {
   return res.json();
 }
 
-export async function runDigest() {
-  const res = await fetch("/api/digest", { method: "POST" });
+export async function runDigest(owner = null) {
+  const res = await fetch("/api/digest", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(owner ? { owner } : {}),
+  });
   return res.json();
 }
 

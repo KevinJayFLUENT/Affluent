@@ -50,13 +50,15 @@ function TouchRow({ t, onOpen, upcoming }) {
 
 export default function MyDay({ targets, tasks, log = [], digest, onOpen, onToggleTask, onRunDigest, digestRunning }) {
   const [showDone, setShowDone] = useState(false);
+  const [sweepOwner, setSweepOwner] = useState("");
   const autoRan = useRef(false);
+  const owners = [...new Set(targets.map((t) => t.details?.accountOwner || t.owner.name))].sort();
 
   // First visit with no digest: run the sweep so the page is never empty.
   useEffect(() => {
     if (!digest && !digestRunning && !autoRan.current) {
       autoRan.current = true;
-      onRunDigest();
+      onRunDigest(null);
     }
   }, []);
 
@@ -98,9 +100,20 @@ export default function MyDay({ targets, tasks, log = [], digest, onOpen, onTogg
       <section className="panel digest">
         <div className="panel-head">
           <h3>Weekly Portfolio Sweep</h3>
-          <button className="digest-btn" onClick={onRunDigest} disabled={digestRunning}>
-            {digestRunning ? "Sweeping…" : digest ? <><RotateCcw size={12} /> Re-run sweep</> : <><Play size={11} /> Run sweep</>}
-          </button>
+          <span className="sweep-controls">
+            <select
+              className="col-filter sweep-owner"
+              value={sweepOwner}
+              onChange={(e) => setSweepOwner(e.target.value)}
+              title="Scope the sweep to one deal lead's book, or the whole house"
+            >
+              <option value="">All owners</option>
+              {owners.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+            <button className="digest-btn" onClick={() => onRunDigest(sweepOwner || null)} disabled={digestRunning}>
+              {digestRunning ? "Sweeping…" : digest ? <><RotateCcw size={12} /> Re-run sweep</> : <><Play size={11} /> Run sweep</>}
+            </button>
+          </span>
         </div>
         {digestRunning && !digest && (
           <div className="analyzing" style={{ border: "none", padding: "8px 0", margin: 0, boxShadow: "none" }}>
@@ -112,7 +125,9 @@ export default function MyDay({ targets, tasks, log = [], digest, onOpen, onTogg
           <>
             <div className="digest-headline">{digest.headline}</div>
             {(digest.summary || digest.brief) && <p className="digest-summary">{digest.summary || digest.brief}</p>}
-            <div className="factor-group-title" style={{ marginTop: 12 }}>This week's priorities — hover for the why</div>
+            {digest.priorities.length > 0 && (
+              <div className="factor-group-title" style={{ marginTop: 12 }}>This week's priorities — hover for the why</div>
+            )}
             <div className="digest-priorities">
               {digest.priorities.map((p, i) => {
                 const isRich = typeof p === "object";
@@ -142,6 +157,7 @@ export default function MyDay({ targets, tasks, log = [], digest, onOpen, onTogg
             </div>
             <div className="digest-meta">
               Swept {relativeTime(digest.generatedAt)} · {digest.source === "cached" ? "cached intelligence" : digest.source}
+              {digest.ownerScope && digest.ownerScope !== "all" && ` · scope: ${digest.ownerScope}`}
             </div>
           </>
         )}

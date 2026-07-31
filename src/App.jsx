@@ -79,11 +79,11 @@ export default function App() {
     await toggleTask(taskId, done);
   }
 
-  async function handleRunDigest() {
+  async function handleRunDigest(owner = null) {
     setDigestRunning(true);
     try {
-      const result = await runDigest();
-      setDigest(result.digest);
+      const result = await runDigest(owner);
+      if (result.digest) setDigest(result.digest);
     } finally {
       setDigestRunning(false);
     }

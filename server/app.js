@@ -37,7 +37,13 @@ app.post("/api/task", (req, res) => {
 // ── Weekly portfolio sweep digest ────────────────────────────────────────
 app.post("/api/digest", async (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
-  const snapshot = state.targets.map((t) => ({
+  // Optional owner scope: sweep one deal lead's book, or the whole house.
+  const owner = req.body?.owner || null;
+  const pool = owner
+    ? state.targets.filter((t) => (t.details?.accountOwner || t.owner.name) === owner)
+    : state.targets;
+  if (!pool.length) return res.status(400).json({ error: `no accounts owned by ${owner}` });
+  const snapshot = pool.map((t) => ({
     company: t.company,
     stage: t.stage,
     scores: t.scores,
@@ -49,14 +55,14 @@ app.post("/api/digest", async (req, res) => {
     openBlockers: t.blockers.filter((b) => b.status === "blocked" || b.status === "pending").length,
   }));
 
-  const dueSoon = state.targets.filter((t) => t.nextTouch && t.nextTouch.due <= today);
-  const catalysts = state.targets.filter((t) => t.signals.some((s) => s.catalyst));
-  const top = rankedTargets()[0];
+  const dueSoon = pool.filter((t) => t.nextTouch && t.nextTouch.due <= today);
+  const catalysts = pool.filter((t) => t.signals.some((s) => s.catalyst));
+  const top = [...pool].sort((a, b) => b.scores.likelihood - a.scores.likelihood)[0];
 
   let digest = null;
   if (aiAvailable()) {
     try {
-      digest = await writeDigest({ today, accounts: snapshot }, PATTERN_LIBRARY);
+      digest = await writeDigest({ today, ownerScope: owner || "entire book", accounts: snapshot }, PATTERN_LIBRARY);
       digest.source = "claude-opus-5";
     } catch (err) {
       console.error("digest fallback:", err.message);
@@ -64,7 +70,7 @@ app.post("/api/digest", async (req, res) => {
   }
   if (!digest) {
     const weekAhead = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-    const dueThisWeek = state.targets.filter((t) => t.nextTouch && t.nextTouch.due > today && t.nextTouch.due <= weekAhead);
+    const dueThisWeek = pool.filter((t) => t.nextTouch && t.nextTouch.due > today && t.nextTouch.due <= weekAhead);
     digest = {
       headline: `${catalysts.length} catalyst${catalysts.length === 1 ? "" : "s"} active · ${dueSoon.length} touch${dueSoon.length === 1 ? "" : "es"} due or overdue`,
       summary:
@@ -97,6 +103,7 @@ app.post("/api/digest", async (req, res) => {
     };
   }
   digest.generatedAt = new Date().toISOString();
+  digest.ownerScope = owner || "all";
   state.digest = digest;
   res.json({ digest });
 });
