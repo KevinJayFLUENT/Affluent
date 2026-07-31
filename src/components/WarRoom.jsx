@@ -188,10 +188,21 @@ function FactorModal({ target, analysis, mode, onClose }) {
   );
 }
 
+// Landmines arrive as {rule, detail} from the live schema, or as plain
+// strings from older/cached briefs — normalize by splitting the first
+// sentence off as the rule.
+function normalizeLandmine(l) {
+  if (typeof l === "object" && l !== null) return { rule: l.rule, detail: l.detail || null };
+  const [rule, rest] = splitLead(String(l));
+  return { rule, detail: rest };
+}
+
 function BriefModal({ target, brief, loading, onClose, onRegenerate }) {
   const [openPoints, setOpenPoints] = useState({});
+  const [openMines, setOpenMines] = useState({});
   const [fullOpen, setFullOpen] = useState(false);
   const togglePoint = (i) => setOpenPoints((p) => ({ ...p, [i]: !p[i] }));
+  const toggleMine = (i) => setOpenMines((p) => ({ ...p, [i]: !p[i] }));
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -231,9 +242,22 @@ function BriefModal({ target, brief, loading, onClose, onRegenerate }) {
 
             <div className="brief-section">
               <label>Landmines — do not touch</label>
-              <ul className="brief-landmines">
-                {brief.landmines.map((l, i) => <li key={i}>{l}</li>)}
-              </ul>
+              <div className="brief-points-list">
+                {brief.landmines.map(normalizeLandmine).map((l, i) => (
+                  <div
+                    key={i}
+                    className={`brief-point brief-mine ${openMines[i] ? "open" : ""} ${l.detail ? "" : "brief-point-static"}`}
+                    onClick={l.detail ? () => toggleMine(i) : undefined}
+                  >
+                    <span className="brief-mine-mark"><X size={11} /></span>
+                    <div className="brief-point-body">
+                      <div className="brief-point-title">{l.rule}</div>
+                      {openMines[i] && l.detail && <div className="brief-point-why">{l.detail}</div>}
+                    </div>
+                    {l.detail && (openMines[i] ? <ChevronUp size={13} /> : <ChevronDown size={13} />)}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* The depth layer: context, recap, closing */}

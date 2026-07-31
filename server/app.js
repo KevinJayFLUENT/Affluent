@@ -425,7 +425,7 @@ app.post("/api/brief", async (req, res) => {
         { point: "Owner mood going in", why: firstSentence(a.relationshipRead.ownerMood) },
         { point: "The precedent", why: firstSentence(a.archetype.dealTwin) },
       ].slice(0, 4),
-      landmines: a.archetype.flashpoints,
+      landmines: a.archetype.flashpoints.map((f) => ({ rule: f, detail: null })),
       theAsk: (target.recommendedOverride || a.recommendedAction).rationale,
       source: "cached",
     };

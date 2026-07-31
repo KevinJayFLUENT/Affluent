@@ -212,7 +212,15 @@ const BRIEF_SCHEMA = {
         properties: { point: { type: "string" }, why: { type: "string" } },
       },
     },
-    landmines: { type: "array", items: { type: "string" } },
+    landmines: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["rule", "detail"],
+        properties: { rule: { type: "string" }, detail: { type: "string" } },
+      },
+    },
     theAsk: { type: "string" },
   },
 };
@@ -232,7 +240,7 @@ export async function prepMeetingBrief(target, patternLibrary, conversationSigna
       "ahead of the next scheduled touch with this acquisition target. He'll read it in the car — make every line earn its place. " +
       "meetingContext: what this meeting is and why now (1-2 sentences). objective: the single thing to walk out with. " +
       "relationshipRecap: 2-3 sentences of history that matter in the room. talkingPoints: 3-4, each with a one-line why. " +
-      "landmines: specific things NOT to say or do with this seller, drawn from the record and archetype. " +
+      "landmines: specific things NOT to say or do with this seller — rule: a blunt imperative of max 8 words (e.g. 'No price talk, at all'); detail: 1-2 sentences of why, citing the record. " +
       "theAsk: exactly how to close the meeting. Ground everything in names, dates, and numbers from the record; cite the " +
       "pattern-library analog where it sharpens a point. BE CONCISE — total under 1200 tokens.\n\n" + patternLibrary,
     messages: [
