@@ -92,40 +92,26 @@ function OwnerCell({ name }) {
   );
 }
 
-// Top signals only — catalyst first, then by impact; the rest fold behind
-// an expand toggle that opens the full signal detail row.
+// One clean button per row: count + net impact. Click to expand the full
+// signal list; each expanded signal explains itself on hover.
 function SignalCell({ target, expanded, onToggle }) {
   if (!target.enriched) return <span className="chip chip-scan">scanning…</span>;
-  const sorted = [...target.signals].sort(
-    (a, b) => (b.catalyst ? 1 : 0) - (a.catalyst ? 1 : 0) || Math.abs(b.contribution) - Math.abs(a.contribution)
-  );
-  const visible = sorted.slice(0, 2);
-  const rest = sorted.length - visible.length;
+  const net = target.signals.reduce((s, x) => s + x.contribution, 0);
+  const hasCatalyst = target.signals.some((s) => s.catalyst);
   return (
-    <div className="chip-row" style={{ marginTop: 0, minHeight: 0, flexWrap: "nowrap" }}>
-      {visible.map((s, i) => (
-        <span
-          key={s.id}
-          className={`chip chip-tight ${s.contribution > 0 ? "chip-pos" : s.contribution < 0 ? "chip-neg" : ""} ${s.catalyst ? "chip-catalyst" : ""}`}
-          style={{ animationDelay: `${i * 140}ms` }}
-        >
-          <span className="chip-label">{s.label}</span>
-          <b>{s.contribution > 0 ? `+${s.contribution}` : s.contribution || "±0"}</b>
-        </span>
-      ))}
-      <button
-        className={`chip chip-expand ${expanded ? "open" : ""}`}
-        onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        title={expanded ? "Hide signals" : "Show all signals"}
-      >
-        {rest > 0 && !expanded && <span>+{rest}</span>}
-        {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-      </button>
-    </div>
+    <button
+      className={`sig-btn ${expanded ? "open" : ""}`}
+      onClick={(e) => { e.stopPropagation(); onToggle(); }}
+    >
+      {hasCatalyst && <Zap size={11} style={{ color: "#d97706" }} />}
+      {target.signals.length} signal{target.signals.length === 1 ? "" : "s"}
+      <b className={net >= 0 ? "pos" : "neg"}>{net > 0 ? `+${net}` : net || "±0"}</b>
+      {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+    </button>
   );
 }
 
-// Full signal breakdown, shown as an expanded row under the account.
+// Full signal list, shown as an expanded row — hover any signal for its story.
 function SignalDetailRow({ target, colSpan }) {
   const sorted = [...target.signals].sort(
     (a, b) => (b.catalyst ? 1 : 0) - (a.catalyst ? 1 : 0) || Math.abs(b.contribution) - Math.abs(a.contribution)
@@ -133,22 +119,24 @@ function SignalDetailRow({ target, colSpan }) {
   return (
     <tr className="signal-detail-row">
       <td colSpan={colSpan}>
-        <div className="signal-detail">
-          {sorted.map((s) => (
-            <div key={s.id} className={`factor ${s.catalyst ? "factor-catalyst" : ""}`}>
-              <div className="factor-top">
-                <span className="factor-label">
-                  {s.catalyst && <Zap size={11} style={{ color: "#d97706" }} />} {s.label}
-                </span>
-                <span className={`factor-contrib ${s.contribution >= 0 ? "pos" : "neg"}`}>
-                  {s.contribution > 0 ? `+${s.contribution}` : s.contribution || "±0"}
-                </span>
-              </div>
-              <div className="factor-value">{s.value}</div>
-              <div className="factor-src">
-                {s.detail} · source: {s.source === "web" ? "web enrichment" : s.source === "broker" ? "broker channel" : "CRM history"}
-              </div>
-            </div>
+        <div className="signal-chips">
+          {sorted.map((s, i) => (
+            <span
+              key={s.id}
+              className={`chip sig-chip ${s.contribution > 0 ? "chip-pos" : s.contribution < 0 ? "chip-neg" : ""} ${s.catalyst ? "chip-catalyst" : ""}`}
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              {s.catalyst && <Zap size={11} />}
+              {s.label}
+              <b>{s.contribution > 0 ? `+${s.contribution}` : s.contribution || "±0"}</b>
+              <span className="sig-tip">
+                <b>{s.value}</b>
+                <div>{s.detail}</div>
+                <div className="sig-tip-src">
+                  Source: {s.source === "web" ? "web enrichment" : s.source === "broker" ? "broker channel" : "CRM history"}
+                </div>
+              </span>
+            </span>
           ))}
         </div>
       </td>
@@ -257,7 +245,7 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
             label="Touches due"
             value={targets.filter((t) => t.nextTouch && dueStatus(t.nextTouch.due) !== "upcoming").length}
             onClick={onGoMyDay}
-            tip="Accounts at or past their agent-prescribed next-touch date. Click to open My Day."
+            tip="Accounts at or past their agent-prescribed next-touch date. Click to open Mission Control."
           />
           <KpiTile
             icon={<ClipboardList size={17} />}
@@ -265,7 +253,7 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
             label="Open tasks"
             value={tasks.filter((t) => !t.done).length}
             onClick={onGoMyDay}
-            tip="Follow-ups the agent created from approved actions. Click to open My Day."
+            tip="Follow-ups the agent created from approved actions. Click to open Mission Control."
           />
         </div>
       )}

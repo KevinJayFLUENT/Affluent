@@ -104,14 +104,16 @@ export default function App() {
             className={`nav-link ${view.name === "board" ? "active" : ""}`}
             onClick={() => setView({ name: "board" })}
           >
-            Accounts
+            Pipeline
+            <span className="nav-tip">Every account in the book, ranked by likelihood to transact, with live enrichment signals.</span>
           </button>
           <button
             className={`nav-link ${view.name === "myday" ? "active" : ""}`}
             onClick={() => setView({ name: "myday" })}
           >
-            My Day
+            Mission Control
             {dueCount + openTaskCount > 0 && <span className="nav-badge">{dueCount + openTaskCount}</span>}
+            <span className="nav-tip">Your agent-prioritized day: touches due, follow-up tasks, and the weekly portfolio sweep — what to do next, across the whole book.</span>
           </button>
         </nav>
         <div className="topbar-right">

@@ -312,23 +312,34 @@ body {
 }
 .owner-name { color: var(--text-dim); font-size: 13px; }
 
-/* Compact signal chips */
-.chip-tight .chip-label { max-width: 118px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.chip-expand {
-  color: var(--text-faint); font-weight: 650; cursor: pointer; gap: 3px;
-  border: 1px solid var(--line); background: var(--panel);
+/* Signals: one condensed button per row */
+.sig-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 600; padding: 4px 11px; border-radius: 999px;
+  background: var(--panel); border: 1px solid var(--line); color: var(--text-dim);
+  cursor: pointer; white-space: nowrap;
+  animation: chipIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.1) backwards;
 }
-.chip-expand:hover { color: var(--blue); border-color: var(--blue); }
-.chip-expand.open { color: var(--blue); border-color: var(--blue); background: var(--blue-soft); }
+.sig-btn:hover { border-color: var(--blue); color: var(--blue); }
+.sig-btn.open { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
+.sig-btn b.pos { color: var(--green); }
+.sig-btn b.neg { color: var(--red); }
 
-/* Expanded signal detail row */
+/* Expanded signal row: chips with hover explanations */
 .signal-detail-row td { padding: 0 14px 14px 14px !important; background: var(--panel-2); }
-.signal-detail {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px;
-  padding-top: 12px; animation: chipIn 0.25s ease;
+.signal-chips { display: flex; flex-wrap: wrap; gap: 7px; padding-top: 12px; }
+.sig-chip { position: relative; cursor: default; padding: 4px 11px; font-size: 11.5px; }
+.sig-tip {
+  position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 40; width: 260px;
+  background: var(--text); color: #e8ebef; font-size: 11.5px; line-height: 1.5; font-weight: 400;
+  border-radius: 8px; padding: 10px 13px; box-shadow: 0 8px 24px rgba(16, 24, 40, 0.25);
+  opacity: 0; visibility: hidden; transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  pointer-events: none; white-space: normal;
 }
-.signal-detail .factor { background: var(--panel); }
-.factor-catalyst { border-left: 3px solid var(--amber); }
+.sig-tip > b { color: #fff; display: block; margin-bottom: 3px; }
+.sig-tip-src { color: #b7c3d4; font-size: 10.5px; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.15); }
+.sig-chip:hover .sig-tip { opacity: 1; visibility: visible; transform: translateY(0); }
 
 /* Column-header tooltips */
 .account-table th { position: relative; overflow: visible; }
@@ -617,6 +628,17 @@ body {
   background: var(--blue); color: #fff; font-size: 10.5px; font-weight: 700;
   border-radius: 999px; padding: 1px 7px; min-width: 18px; text-align: center;
 }
+.nav-link { position: relative; }
+.nav-tip {
+  position: absolute; top: calc(100% + 10px); left: 0; z-index: 60; width: 270px;
+  background: var(--text); color: #e8ebef; font-size: 11.5px; line-height: 1.5; font-weight: 400;
+  text-align: left; border-radius: 8px; padding: 10px 13px;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.25);
+  opacity: 0; visibility: hidden; transform: translateY(-4px);
+  transition: opacity 0.15s ease 0.25s, transform 0.15s ease 0.25s, visibility 0.15s 0.25s;
+  pointer-events: none; white-space: normal;
+}
+.nav-link:hover .nav-tip { opacity: 1; visibility: visible; transform: translateY(0); }
 
 /* Due badges */
 .due-badge {

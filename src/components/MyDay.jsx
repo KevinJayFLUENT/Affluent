@@ -34,7 +34,7 @@ export default function MyDay({ targets, tasks, digest, onOpen, onToggleTask, on
     <div className="myday">
       <div className="board-header">
         <div>
-          <h1>My Day</h1>
+          <h1>Mission Control</h1>
           <p className="board-sub">
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })} ·{" "}
             {dueNow.length} touch{dueNow.length === 1 ? "" : "es"} due · {openTasks.length} open task{openTasks.length === 1 ? "" : "s"}
