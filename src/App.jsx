@@ -3,6 +3,7 @@ import { fetchTargets, enrichTarget, toggleTask, runDigest } from "./api.js";
 import Board from "./components/Board.jsx";
 import WarRoom from "./components/WarRoom.jsx";
 import MyDay from "./components/MyDay.jsx";
+import Insights from "./components/Insights.jsx";
 import Logo from "./components/Logo.jsx";
 import { RotateCcw } from "./components/Icons.jsx";
 
@@ -115,6 +116,12 @@ export default function App() {
             {dueCount + openTaskCount > 0 && <span className="nav-badge">{dueCount + openTaskCount}</span>}
             <span className="nav-tip">Your agent-prioritized day: touches due, follow-up tasks, and the weekly portfolio sweep — what to do next, across the whole book.</span>
           </button>
+          <button
+            className={`nav-link ${view.name === "insights" ? "active" : ""}`}
+            onClick={() => setView({ name: "insights" })}
+          >
+            Insights
+          </button>
         </nav>
         <div className="topbar-right">
           <span className={`ai-pill ${aiLive ? "live" : ""}`}>
@@ -144,6 +151,10 @@ export default function App() {
           onOpen={(id) => setView({ name: "warroom", targetId: id })}
           onGoMyDay={() => setView({ name: "myday" })}
         />
+      )}
+
+      {view.name === "insights" && (
+        <Insights onOpenAccount={(id) => setView({ name: "warroom", targetId: id })} />
       )}
 
       {view.name === "myday" && (

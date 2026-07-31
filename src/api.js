@@ -53,6 +53,79 @@ export async function executeAction(payload) {
   return res.json();
 }
 
+// ── Insights: persistent Reports & Dashboards ──────────────────────────────
+export async function listInsights() {
+  const res = await fetch("/api/insights/dashboards");
+  return res.json();
+}
+
+function selectionsToQuery(selections = {}) {
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(selections)) {
+    if (v != null && v !== "" && v !== "__all__") params.set(k, v);
+  }
+  const q = params.toString();
+  return q ? `?${q}` : "";
+}
+
+export async function openDashboard(id, selections = {}) {
+  const res = await fetch(`/api/insights/dashboards/${id}${selectionsToQuery(selections)}`);
+  if (!res.ok) throw new Error("failed to open dashboard");
+  return res.json();
+}
+
+export async function buildDashboard(prompt) {
+  const res = await fetch("/api/insights/dashboards", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt }),
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "build failed");
+  return res.json();
+}
+
+export async function refreshDashboard(id, selections = {}) {
+  const res = await fetch(`/api/insights/dashboards/${id}/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ selections }),
+  });
+  return res.json();
+}
+
+export async function deleteDashboard(id) {
+  const res = await fetch(`/api/insights/dashboards/${id}`, { method: "DELETE" });
+  return res.json();
+}
+
+export async function fetchReport(payload) {
+  const res = await fetch("/api/insights/report", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+export async function saveReport(payload) {
+  const res = await fetch("/api/insights/reports", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+export async function openSavedReport(id) {
+  const res = await fetch(`/api/insights/reports/${id}`);
+  return res.json();
+}
+
+export async function deleteReport(id) {
+  const res = await fetch(`/api/insights/reports/${id}`, { method: "DELETE" });
+  return res.json();
+}
+
 // POST-based SSE consumer: /api/analyze streams trace + analysis events.
 export async function analyzeTarget(targetId, { onTrace, onAnalysis }, force = false) {
   const res = await fetch("/api/analyze", {

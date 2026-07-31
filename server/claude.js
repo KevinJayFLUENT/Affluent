@@ -69,7 +69,10 @@ const ANALYSIS_SCHEMA = {
   },
 };
 
-async function createWithFallbackModels(params) {
+export const MODEL_NAME = MODEL;
+export { client as anthropicClient };
+
+export async function createWithFallbackModels(params) {
   // Prefer server-side refusal fallbacks (recommended default for opus-5 code);
   // if the beta isn't accepted, retry as a plain request.
   try {
@@ -84,7 +87,7 @@ async function createWithFallbackModels(params) {
   }
 }
 
-function extractJson(response) {
+export function extractJson(response) {
   if (response.stop_reason === "refusal") throw new Error("Model refused request");
   if (response.stop_reason === "max_tokens") throw new Error("Response truncated at max_tokens");
   const text = response.content.find((b) => b.type === "text")?.text;

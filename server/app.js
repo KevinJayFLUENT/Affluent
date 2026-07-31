@@ -3,11 +3,15 @@ import { PATTERN_LIBRARY } from "./data/targets.js";
 import { state, getTarget, rankedTargets, applyAction, markEnriched, resetState } from "./state.js";
 import { analyzeTarget, rescoreAfterAction, writeDigest, prepMeetingBrief, aiAvailable } from "./claude.js";
 import { computeConversationSignals, conversationSummaryLine } from "./conversation.js";
+import insightsRouter from "./insights/routes.js";
 
 const withConversation = (t) => ({ ...t, conversationSignals: computeConversationSignals(t) });
 
 const app = express();
 app.use(express.json());
+
+// Insights: persistent Reports & Dashboards (prompt-built, refresh live).
+app.use("/api/insights", insightsRouter);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
