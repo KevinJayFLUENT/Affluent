@@ -314,7 +314,36 @@ body {
 
 /* Compact signal chips */
 .chip-tight .chip-label { max-width: 118px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.chip-more { color: var(--text-faint); font-weight: 650; cursor: default; }
+.chip-expand {
+  color: var(--text-faint); font-weight: 650; cursor: pointer; gap: 3px;
+  border: 1px solid var(--line); background: var(--panel);
+}
+.chip-expand:hover { color: var(--blue); border-color: var(--blue); }
+.chip-expand.open { color: var(--blue); border-color: var(--blue); background: var(--blue-soft); }
+
+/* Expanded signal detail row */
+.signal-detail-row td { padding: 0 14px 14px 14px !important; background: var(--panel-2); }
+.signal-detail {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px;
+  padding-top: 12px; animation: chipIn 0.25s ease;
+}
+.signal-detail .factor { background: var(--panel); }
+.factor-catalyst { border-left: 3px solid var(--amber); }
+
+/* Column-header tooltips */
+.account-table th { position: relative; overflow: visible; }
+.th-tip {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 40; width: 230px;
+  background: var(--text); color: #fff; font-size: 11.5px; line-height: 1.5;
+  font-weight: 400; text-transform: none; letter-spacing: 0;
+  border-radius: 8px; padding: 9px 12px; box-shadow: 0 8px 24px rgba(16, 24, 40, 0.25);
+  opacity: 0; visibility: hidden; transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  pointer-events: none; white-space: normal;
+}
+.account-table th:hover .th-tip { opacity: 1; visibility: visible; transform: translateY(0); }
+.account-table th:nth-last-child(-n+3) .th-tip { left: auto; right: 0; }
+.th-tip-sort { color: #b7c3d4; font-size: 10.5px; margin-top: 5px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.15); }
 
 /* Highlights band */
 .highlights {

@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAnimatedNumber } from "../hooks.js";
 import CompanyLogo from "./CompanyLogo.jsx";
 import { DueBadge, dueStatus } from "./MyDay.jsx";
-import { Zap, Gauge, CalendarClock, ClipboardList } from "./Icons.jsx";
+import { Zap, Gauge, CalendarClock, ClipboardList, ChevronDown, ChevronUp } from "./Icons.jsx";
 
 function scoreTone(v) {
   if (v >= 70) return "hot";
@@ -44,17 +44,28 @@ function Sparkline({ points = [] }) {
 }
 
 const COLUMNS = [
-  { key: "rank", label: "#", get: (t) => -t.scores.likelihood },
-  { key: "company", label: "Account", get: (t) => t.company },
-  { key: "stage", label: "Stage", get: (t) => t.details?.stage || t.stage },
-  { key: "nexttouch", label: "Next Touch", get: (t) => t.nextTouch?.due || "9999" },
-  { key: "owner", label: "Owner", get: (t) => t.details?.accountOwner || t.owner.name },
-  { key: "revenue", label: "Revenue", get: (t) => t.financials.revenue },
-  { key: "ebitda", label: "EBITDA %", get: (t) => t.financials.ebitdaMargin },
-  { key: "arr", label: "ARR %", get: (t) => t.financials.arrPct },
-  { key: "close", label: "Close", get: (t) => t.scores.close },
-  { key: "likelihood", label: "Likelihood", get: (t) => t.scores.likelihood },
-  { key: "signals", label: "Signals", get: null },
+  { key: "rank", label: "#", get: (t) => -t.scores.likelihood,
+    tip: "Rank by likelihood to transact — re-ranks live as scores move." },
+  { key: "company", label: "Account", get: (t) => t.company,
+    tip: "The acquisition target. A catalyst tag means an external event just reversed the risk keeping this deal stuck." },
+  { key: "stage", label: "Stage", get: (t) => t.details?.stage || t.stage,
+    tip: "Where the account sits in our outreach funnel." },
+  { key: "nexttouch", label: "Next Touch", get: (t) => t.nextTouch?.due || "9999",
+    tip: "The agent-prescribed date for the next contact, based on the seller's archetype. Don't miss it — and don't jump it." },
+  { key: "owner", label: "Owner", get: (t) => t.details?.accountOwner || t.owner.name,
+    tip: "The Fluent deal lead who owns this account." },
+  { key: "revenue", label: "Revenue", get: (t) => t.financials.revenue,
+    tip: "Trailing-twelve-month revenue (estimated where not disclosed)." },
+  { key: "ebitda", label: "EBITDA %", get: (t) => t.financials.ebitdaMargin,
+    tip: "Profitability margin — quality of earnings at a glance." },
+  { key: "arr", label: "ARR %", get: (t) => t.financials.arrPct,
+    tip: "Share of revenue that recurs. Higher ARR mix supports a higher multiple." },
+  { key: "close", label: "Close", get: (t) => t.scores.close,
+    tip: "Probability of reaching a signed close, driven by how many path-to-transact blockers are still open. Click the meter in the account for the breakdown." },
+  { key: "likelihood", label: "Likelihood", get: (t) => t.scores.likelihood,
+    tip: "0–100 likelihood the owner transacts at all — read from the conversation history plus enrichment signals. The trend line shows its movement." },
+  { key: "signals", label: "Signals", get: null,
+    tip: "Enrichment findings from web, CRM, and broker channels, each with its score impact. Click +N or the arrow to see all of an account's signals." },
 ];
 
 function KpiTile({ icon, label, value, tone, onClick, tip, active }) {
@@ -81,14 +92,15 @@ function OwnerCell({ name }) {
   );
 }
 
-// Top signals only — catalyst first, then by impact; the rest fold into +N.
-function SignalCell({ target }) {
+// Top signals only — catalyst first, then by impact; the rest fold behind
+// an expand toggle that opens the full signal detail row.
+function SignalCell({ target, expanded, onToggle }) {
   if (!target.enriched) return <span className="chip chip-scan">scanning…</span>;
   const sorted = [...target.signals].sort(
     (a, b) => (b.catalyst ? 1 : 0) - (a.catalyst ? 1 : 0) || Math.abs(b.contribution) - Math.abs(a.contribution)
   );
   const visible = sorted.slice(0, 2);
-  const rest = sorted.slice(2);
+  const rest = sorted.length - visible.length;
   return (
     <div className="chip-row" style={{ marginTop: 0, minHeight: 0, flexWrap: "nowrap" }}>
       {visible.map((s, i) => (
@@ -96,22 +108,51 @@ function SignalCell({ target }) {
           key={s.id}
           className={`chip chip-tight ${s.contribution > 0 ? "chip-pos" : s.contribution < 0 ? "chip-neg" : ""} ${s.catalyst ? "chip-catalyst" : ""}`}
           style={{ animationDelay: `${i * 140}ms` }}
-          title={`${s.label}: ${s.value} — ${s.detail}`}
         >
           <span className="chip-label">{s.label}</span>
           <b>{s.contribution > 0 ? `+${s.contribution}` : s.contribution || "±0"}</b>
         </span>
       ))}
-      {rest.length > 0 && (
-        <span
-          className="chip chip-more"
-          style={{ animationDelay: `${visible.length * 140}ms` }}
-          title={rest.map((s) => `${s.label} (${s.contribution > 0 ? "+" : ""}${s.contribution})`).join("\n")}
-        >
-          +{rest.length}
-        </span>
-      )}
+      <button
+        className={`chip chip-expand ${expanded ? "open" : ""}`}
+        onClick={(e) => { e.stopPropagation(); onToggle(); }}
+        title={expanded ? "Hide signals" : "Show all signals"}
+      >
+        {rest > 0 && !expanded && <span>+{rest}</span>}
+        {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+      </button>
     </div>
+  );
+}
+
+// Full signal breakdown, shown as an expanded row under the account.
+function SignalDetailRow({ target, colSpan }) {
+  const sorted = [...target.signals].sort(
+    (a, b) => (b.catalyst ? 1 : 0) - (a.catalyst ? 1 : 0) || Math.abs(b.contribution) - Math.abs(a.contribution)
+  );
+  return (
+    <tr className="signal-detail-row">
+      <td colSpan={colSpan}>
+        <div className="signal-detail">
+          {sorted.map((s) => (
+            <div key={s.id} className={`factor ${s.catalyst ? "factor-catalyst" : ""}`}>
+              <div className="factor-top">
+                <span className="factor-label">
+                  {s.catalyst && <Zap size={11} style={{ color: "#d97706" }} />} {s.label}
+                </span>
+                <span className={`factor-contrib ${s.contribution >= 0 ? "pos" : "neg"}`}>
+                  {s.contribution > 0 ? `+${s.contribution}` : s.contribution || "±0"}
+                </span>
+              </div>
+              <div className="factor-value">{s.value}</div>
+              <div className="factor-src">
+                {s.detail} · source: {s.source === "web" ? "web enrichment" : s.source === "broker" ? "broker channel" : "CRM history"}
+              </div>
+            </div>
+          ))}
+        </div>
+      </td>
+    </tr>
   );
 }
 
@@ -119,6 +160,7 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
   const [sort, setSort] = useState({ key: "rank", dir: 1 });
   const [query, setQuery] = useState("");
   const [catalystOnly, setCatalystOnly] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
 
   // FLIP: rows glide to their new position when the ranking changes.
   const rowRefs = useRef(new Map());
@@ -247,10 +289,15 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
                   key={c.key}
                   className={c.get ? "sortable" : ""}
                   onClick={() => toggleSort(c)}
-                  title={c.get ? "Click to sort" : undefined}
                 >
                   {c.label}
                   {sort.key === c.key && <span className="sort-arrow">{sort.dir === 1 ? " ▲" : " ▼"}</span>}
+                  {c.tip && (
+                    <div className="th-tip">
+                      {c.tip}
+                      {c.get && <div className="th-tip-sort">Click to sort</div>}
+                    </div>
+                  )}
                 </th>
               ))}
             </tr>
@@ -259,8 +306,8 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
             {rows.map((t) => {
               const hasCatalyst = t.enriched && t.signals.some((s) => s.catalyst);
               return (
+                <React.Fragment key={t.id}>
                 <tr
-                  key={t.id}
                   ref={(el) => rowRefs.current.set(t.id, el)}
                   className={`account-row ${hasCatalyst ? "row-catalyst" : ""}`}
                   onClick={() => onOpen(t.id)}
@@ -301,9 +348,17 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
                     </div>
                   </td>
                   <td className="cell-signals">
-                    <SignalCell target={t} />
+                    <SignalCell
+                      target={t}
+                      expanded={expandedId === t.id}
+                      onToggle={() => setExpandedId(expandedId === t.id ? null : t.id)}
+                    />
                   </td>
                 </tr>
+                {expandedId === t.id && t.enriched && (
+                  <SignalDetailRow target={t} colSpan={COLUMNS.length} />
+                )}
+                </React.Fragment>
               );
             })}
             {!rows.length && (
