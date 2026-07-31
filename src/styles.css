@@ -284,7 +284,7 @@ body {
 @media (max-width: 760px) { .modal-cols { grid-template-columns: 1fr; } }
 
 /* KPI strip */
-.kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; max-width: 860px; }
+.kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; max-width: 1080px; }
 .kpi {
   display: flex; align-items: center; gap: 12px;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
@@ -299,6 +299,7 @@ body {
 .kpi-blue { background: var(--blue-soft); color: var(--blue); }
 .kpi-amber { background: var(--amber-soft); color: var(--amber); }
 .kpi-red { background: var(--red-soft); color: var(--red); }
+.kpi-green { background: var(--green-soft); color: var(--green); }
 .kpi-neutral { background: var(--panel-2); color: var(--text-dim); }
 .kpi-value { font-size: 20px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--text); }
 .kpi-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.7px; font-weight: 600; color: var(--text-faint); margin-top: 1px; }

@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAnimatedNumber } from "../hooks.js";
 import CompanyLogo from "./CompanyLogo.jsx";
 import { DueBadge, dueStatus } from "./MyDay.jsx";
-import { Zap, Gauge, CalendarClock, ClipboardList, ChevronDown, ChevronUp } from "./Icons.jsx";
+import { Zap, Gauge, CalendarClock, ClipboardList, ChevronDown, ChevronUp, TrendingUp } from "./Icons.jsx";
 import Flag, { countryOf } from "./Flags.jsx";
 
 function scoreTone(v) {
@@ -264,42 +264,60 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay, 
         )}
       </div>
 
-      {targets.length > 0 && (
-        <div className="kpi-strip">
-          <KpiTile
-            icon={<Gauge size={17} />}
-            tone="blue"
-            label="Avg likelihood"
-            value={Math.round(targets.reduce((s, t) => s + t.scores.likelihood, 0) / targets.length)}
-            tip="Average likelihood-to-transact across the pipeline, out of 100. Driven by conversation history + enrichment signals."
-          />
-          <KpiTile
-            icon={<Zap size={17} />}
-            tone="amber"
-            label="Catalysts active"
-            value={targets.filter((t) => t.enriched && t.signals.some((s) => s.catalyst)).length}
-            onClick={() => setCatalystOnly(!catalystOnly)}
-            active={catalystOnly}
-            tip="A catalyst is an external event — a regulation reversal, a competitor exiting, a funding shift — that removes the specific risk keeping a deal stuck. It's the strongest revival signal in the book. Click to filter the list."
-          />
-          <KpiTile
-            icon={<CalendarClock size={17} />}
-            tone={targets.some((t) => t.nextTouch && dueStatus(t.nextTouch.due) !== "upcoming") ? "red" : "neutral"}
-            label="Touches due"
-            value={targets.filter((t) => t.nextTouch && dueStatus(t.nextTouch.due) !== "upcoming").length}
-            onClick={onGoMyDay}
-            tip="Accounts at or past their agent-prescribed next-touch date. Click to open Mission Control."
-          />
-          <KpiTile
-            icon={<ClipboardList size={17} />}
-            tone="neutral"
-            label="Open tasks"
-            value={tasks.filter((t) => !t.done).length}
-            onClick={onGoMyDay}
-            tip="Follow-ups the agent created from approved actions. Click to open Mission Control."
-          />
-        </div>
-      )}
+      {targets.length > 0 && (() => {
+        // KPIs follow the active filters — they describe what you're looking at.
+        const pool = rows;
+        const rowIds = new Set(pool.map((t) => t.id));
+        const momentum = pool.reduce(
+          (s, t) => s + ((t.scoreHistory?.at(-1) ?? t.scores.likelihood) - (t.scoreHistory?.[0] ?? t.scores.likelihood)),
+          0
+        );
+        const filtered = pool.length !== targets.length;
+        return (
+          <div className="kpi-strip">
+            <KpiTile
+              icon={<Gauge size={17} />}
+              tone="blue"
+              label={filtered ? `Avg likelihood (${pool.length})` : "Avg likelihood"}
+              value={pool.length ? Math.round(pool.reduce((s, t) => s + t.scores.likelihood, 0) / pool.length) : "—"}
+              tip="Average likelihood-to-transact across the accounts currently shown, out of 100. Updates with your filters."
+            />
+            <KpiTile
+              icon={<TrendingUp size={17} />}
+              tone={momentum > 0 ? "green" : momentum < 0 ? "red" : "neutral"}
+              label="Book momentum"
+              value={momentum > 0 ? `+${momentum}` : momentum || "±0"}
+              onClick={onGoMyDay}
+              tip="Net likelihood movement across the accounts shown since session start — the sum of every score change from sweeps, approved actions, and replies. Positive momentum predicts a warming book; click for the movers behind it."
+            />
+            <KpiTile
+              icon={<Zap size={17} />}
+              tone="amber"
+              label="Catalysts active"
+              value={pool.filter((t) => t.enriched && t.signals.some((s) => s.catalyst)).length}
+              onClick={() => setCatalystOnly(!catalystOnly)}
+              active={catalystOnly}
+              tip="A catalyst is an external event — a regulation reversal, a competitor exiting, a funding shift — that removes the specific risk keeping a deal stuck. It's the strongest revival signal in the book. Click to filter the list."
+            />
+            <KpiTile
+              icon={<CalendarClock size={17} />}
+              tone={pool.some((t) => t.nextTouch && dueStatus(t.nextTouch.due) !== "upcoming") ? "red" : "neutral"}
+              label="Touches due"
+              value={pool.filter((t) => t.nextTouch && dueStatus(t.nextTouch.due) !== "upcoming").length}
+              onClick={onGoMyDay}
+              tip="Accounts shown that are at or past their agent-prescribed next-touch date. Click to open Mission Control."
+            />
+            <KpiTile
+              icon={<ClipboardList size={17} />}
+              tone="neutral"
+              label="Open tasks"
+              value={tasks.filter((t) => !t.done && (!filtered || rowIds.has(t.targetId))).length}
+              onClick={onGoMyDay}
+              tip="Open follow-ups the agent created for the accounts shown. Click to open Mission Control."
+            />
+          </div>
+        );
+      })()}
 
       <div className="list-toolbar">
         <input
