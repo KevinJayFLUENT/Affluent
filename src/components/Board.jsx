@@ -54,6 +54,8 @@ const COLUMNS = [
     tip: "The agent-prescribed date for the next contact, based on the seller's archetype. Don't miss it — and don't jump it." },
   { key: "owner", label: "Owner", get: (t) => t.details?.accountOwner || t.owner.name,
     tip: "The Fluent deal lead who owns this account." },
+  { key: "exclusivity", label: "Exclusivity", get: (t) => t.details?.exclusivity?.status || "None",
+    tip: "Exclusivity is assigned to the Account Owner for 6 months. Status flips Active → Expiring Soon → Expired on its own as the end date approaches." },
   { key: "revenue", label: "Revenue", get: (t) => t.financials.revenue,
     tip: "Trailing-twelve-month revenue (estimated where not disclosed)." },
   { key: "ebitda", label: "EBITDA %", get: (t) => t.financials.ebitdaMargin,
@@ -78,6 +80,20 @@ function KpiTile({ icon, label, value, tone, onClick, tip, active }) {
       </div>
       {tip && <div className="kpi-tip">{tip}</div>}
     </div>
+  );
+}
+
+// Exclusivity status chip — status is computed server-side from the record's
+// dates, so it flips on its own as time passes.
+function ExclusivityCell({ exclusivity }) {
+  const status = exclusivity?.status;
+  if (!status || status === "None") return <span className="muted">—</span>;
+  const cls = status === "Active" ? "exc-active" : status === "Expiring Soon" ? "exc-expiring" : "exc-expired";
+  return (
+    <span className={`exc-chip ${cls}`} title={`${exclusivity.owner} · ${exclusivity.startDate} → ${exclusivity.endDate}`}>
+      {status}
+      <span className="exc-date">{exclusivity.endDate}</span>
+    </span>
   );
 }
 
@@ -144,7 +160,7 @@ function SignalDetailRow({ target, colSpan }) {
   );
 }
 
-export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }) {
+export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay, onNew }) {
   const [sort, setSort] = useState({ key: "rank", dir: 1 });
   const [query, setQuery] = useState("");
   const [catalystOnly, setCatalystOnly] = useState(false);
@@ -192,6 +208,7 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
     if (f.company) out = out.filter((t) => (t.company + " " + t.vertical).toLowerCase().includes(f.company.toLowerCase()));
     if (f.stage) out = out.filter((t) => (t.details?.stage || t.stage) === f.stage);
     if (f.owner) out = out.filter((t) => (t.details?.accountOwner || t.owner.name) === f.owner);
+    if (f.exclusivity) out = out.filter((t) => (t.details?.exclusivity?.status || "None") === f.exclusivity);
     if (f.nexttouch) {
       out = out.filter((t) => {
         const s = t.nextTouch ? dueStatus(t.nextTouch.due) : null;
@@ -236,6 +253,11 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
             {sweepStatus === "idle" && "Loading pipeline…"}
           </p>
         </div>
+        {onNew && (
+          <button className="primary-btn" onClick={onNew} title="Create a new account — the agent enriches it on save">
+            + New
+          </button>
+        )}
       </div>
 
       {targets.length > 0 && (
@@ -342,6 +364,15 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
                     {owners.map((o) => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </th>
+                <th>
+                  <select className="col-filter" value={colFilters.exclusivity || ""} onChange={(e) => setCF("exclusivity", e.target.value)}>
+                    <option value="">Any</option>
+                    <option value="Active">Active</option>
+                    <option value="Expiring Soon">Expiring Soon</option>
+                    <option value="Expired">Expired</option>
+                    <option value="None">None</option>
+                  </select>
+                </th>
                 <th><input className="col-filter" type="number" placeholder="≥ $M" value={colFilters.revenue || ""} onChange={(e) => setCF("revenue", e.target.value)} /></th>
                 <th><input className="col-filter" type="number" placeholder="≥ %" value={colFilters.ebitda || ""} onChange={(e) => setCF("ebitda", e.target.value)} /></th>
                 <th><input className="col-filter" type="number" placeholder="≥ %" value={colFilters.arr || ""} onChange={(e) => setCF("arr", e.target.value)} /></th>
@@ -391,6 +422,7 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
                     )}
                   </td>
                   <td><OwnerCell name={t.details?.accountOwner || t.owner.name} /></td>
+                  <td><ExclusivityCell exclusivity={t.details?.exclusivity} /></td>
                   <td className="cell-num">${t.financials.revenue.toFixed(1)}M</td>
                   <td className="cell-num">{t.financials.ebitdaMargin}%</td>
                   <td className="cell-num">{t.financials.arrPct}%</td>

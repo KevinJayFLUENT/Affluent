@@ -1,14 +1,33 @@
 import express from "express";
 import { PATTERN_LIBRARY } from "./data/targets.js";
-import { state, getTarget, rankedTargets, applyAction, markEnriched, resetState } from "./state.js";
+import {
+  state, getTarget, rankedTargets, applyAction, markEnriched, resetState,
+  ensureReady, persist, persistNow, addAccount,
+} from "./state.js";
 import { analyzeTarget, rescoreAfterAction, writeDigest, prepMeetingBrief, aiAvailable } from "./claude.js";
 import { computeConversationSignals, conversationSummaryLine } from "./conversation.js";
+import { withStatus } from "./exclusivity.js";
+import { buildAccount, enrichAccount } from "./accounts.js";
+import { accountRows, FIELD_CATALOG } from "./insights/derive.js";
+import { applyFilters, humanizeFilter } from "./insights/engine.js";
 import insightsRouter from "./insights/routes.js";
 
-const withConversation = (t) => ({ ...t, conversationSignals: computeConversationSignals(t) });
+// Response decoration: computed conversation indicators + live exclusivity
+// status (Active / Expiring Soon / Expired is derived from dates, never stored).
+const withConversation = (t) => ({
+  ...t,
+  conversationSignals: computeConversationSignals(t),
+  details: t.details ? { ...t.details, exclusivity: withStatus(t.details.exclusivity) } : t.details,
+});
 
 const app = express();
 app.use(express.json());
+
+// Hydrate the working set from the persistent store (and run the one-time
+// seed migration) before any route touches state.
+app.use("/api", (req, res, next) => {
+  ensureReady().then(() => next(), next);
+});
 
 // Insights: persistent Reports & Dashboards (prompt-built, refresh live).
 app.use("/api/insights", insightsRouter);
@@ -31,6 +50,7 @@ app.post("/api/task", (req, res) => {
   const task = state.tasks.find((t) => t.id === req.body?.taskId);
   if (!task) return res.status(404).json({ error: "unknown task" });
   task.done = Boolean(req.body?.done);
+  persist();
   res.json({ ok: true, task });
 });
 
@@ -105,6 +125,7 @@ app.post("/api/digest", async (req, res) => {
   digest.generatedAt = new Date().toISOString();
   digest.ownerScope = owner || "all";
   state.digest = digest;
+  persist();
   res.json({ digest });
 });
 
@@ -196,6 +217,7 @@ app.post("/api/analyze", async (req, res) => {
     const meta = { generatedAt: new Date().toISOString(), source: analysisSource };
     target.analysisCache = analysis;
     target.analysisMeta = meta;
+    persist();
     send("trace", { text: "Analysis complete — rendering War Room" });
     send("analysis", { targetId: target.id, analysis, meta, target });
   } catch (err) {
@@ -270,6 +292,7 @@ app.post("/api/act", async (req, res) => {
     sentiment: "positive",
     note: actionLabel || actionId,
   });
+  persist();
 
   res.json({
     before: result.before,
@@ -328,6 +351,7 @@ app.post("/api/simulate", (req, res) => {
     done: false,
   };
   state.tasks.unshift(task);
+  persist();
 
   res.json({
     before,
@@ -382,7 +406,100 @@ app.post("/api/brief", async (req, res) => {
   }
   brief.generatedAt = new Date().toISOString();
   target.meetingBrief = brief;
+  persist();
   res.json({ brief });
+});
+
+// ── New account: create immediately, enrich as a second pass ─────────────
+app.post("/api/accounts", async (req, res) => {
+  const input = req.body || {};
+  if (!input.companyName || !String(input.companyName).trim()) {
+    return res.status(400).json({ error: "companyName is required" });
+  }
+  const dup = state.targets.find(
+    (t) => t.company.toLowerCase() === String(input.companyName).trim().toLowerCase()
+  );
+  if (dup) return res.status(409).json({ error: `An account named "${dup.company}" already exists` });
+
+  const account = buildAccount(input, new Set(state.targets.map((t) => t.id)));
+  addAccount(account);
+
+  const logEntry = {
+    id: `log-${Date.now()}`,
+    date: new Date().toISOString(),
+    targetId: account.id,
+    company: account.company,
+    text: `Account created by ${account.details.accountOwner}`,
+    detail: `Exclusivity assigned to ${account.details.exclusivity.owner} through ${account.details.exclusivity.endDate}. Enrichment sweep queued.`,
+  };
+  state.log.unshift(logEntry);
+
+  await persistNow(); // durable before the client sees it
+  res.json({ target: withConversation(account), logEntry });
+});
+
+// AI enrichment pass for a newly created account: fills the full scraping
+// schema + signals, then /api/enrich (the standard sweep) applies the score
+// deltas so the UI treatment is identical to seeded accounts.
+app.post("/api/accounts/:id/enrich", async (req, res) => {
+  const target = getTarget(req.params.id);
+  if (!target) return res.status(404).json({ error: "unknown account" });
+  if (target.origin !== "user") return res.status(400).json({ error: "seeded accounts use /api/enrich" });
+
+  const input = {
+    companyName: target.company,
+    linkedinUrl: target.details.linkedin,
+    website: target.details.domain,
+    industry: target.details.industry,
+    employeeCount: target.details.employees,
+    hqCity: req.body?.hqCity || target.details.address?.split(",")[0],
+    hqCountry: req.body?.hqCountry,
+    ...req.body,
+  };
+
+  try {
+    const { source } = await enrichAccount(target, input);
+    const before = target.scores.likelihood;
+    markEnriched(target.id); // applies signal contributions — same pipeline as seeds
+    await persistNow();
+    res.json({
+      target: withConversation(target),
+      signals: target.signals,
+      before,
+      after: target.scores.likelihood,
+      catalyst: target.signals.some((s) => s.catalyst),
+      source,
+    });
+  } catch (err) {
+    console.error("account enrich error:", err.message);
+    res.status(500).json({ error: "enrichment failed", detail: err.message });
+  }
+});
+
+// ── Generic query: execute a filter definition against the live store ────
+// One code path for Insights widgets, drill-downs, and anything else that
+// needs "accounts matching these conditions, plus aggregates".
+app.post("/api/query", (req, res) => {
+  const filters = Array.isArray(req.body?.filters) ? req.body.filters : [];
+  const bad = filters.find((f) => !f?.field || !FIELD_CATALOG[f.field]);
+  if (bad) return res.status(400).json({ error: `unknown field: ${bad?.field}` });
+
+  const rows = accountRows(state.targets, new Date());
+  const matched = applyFilters(rows, filters);
+  const avg = (get) => (matched.length ? Math.round(matched.reduce((s, r) => s + (get(r) || 0), 0) / matched.length) : 0);
+
+  res.json({
+    total: matched.length,
+    filters: filters.map((f) => ({ ...f, text: humanizeFilter(f) })),
+    aggregates: {
+      avgLikelihood: avg((r) => r.currentScore),
+      avgClose: avg((r) => r.closeScore),
+      catalysts: matched.filter((r) => r.catalystFlag).length,
+      netScoreChange: matched.reduce((s, r) => s + (r.scoreDelta || 0), 0),
+    },
+    accounts: matched,
+    generatedAt: new Date().toISOString(),
+  });
 });
 
 // ── AI diagnostics: tiny live call, returns ok or the real error ─────────

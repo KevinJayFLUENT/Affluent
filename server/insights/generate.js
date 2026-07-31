@@ -21,6 +21,7 @@ const DIMENSIONS = {
   nbaType: { label: "Next Best Action", kind: "categorical", values: ["Re-engage", "Exit-Timing", "Divestiture", "Founder-Succession", "Distressed"] },
   ownershipType: { label: "Ownership Type", kind: "categorical", values: ["Founder-owned", "PE-owned", "Corporate-owned", "Independent"] },
   priority: { label: "NBA Priority", kind: "categorical", values: ["High", "Medium", "Low"] },
+  exclusivityStatus: { label: "Exclusivity Status", kind: "categorical", values: ["Active", "Expiring Soon", "Expired", "None"] },
   stage: { label: "Stage", kind: "categorical", dynamic: true },
   accountOwner: { label: "Account Owner", kind: "categorical", dynamic: true },
   country: { label: "Country", kind: "categorical", dynamic: true },
@@ -66,7 +67,7 @@ const DIMENSIONS = {
   },
 };
 
-const ROW_DIMS = ["nbaType", "ownershipType", "priority", "stage", "accountOwner", "country"];
+const ROW_DIMS = ["nbaType", "ownershipType", "priority", "stage", "accountOwner", "country", "exclusivityStatus"];
 const COL_DIMS = ["triggerInDays", "daysSinceActivity", "scoreDelta", "score", "priority"];
 
 const KPI_DEFS = {
@@ -87,7 +88,7 @@ const KPI_DEFS = {
 };
 const KPI_KEYS = Object.keys(KPI_DEFS);
 
-const FILTER_BAR_FIELDS = ["country", "accountOwner", "leadOwner", "priority", "nbaType", "ownershipType", "stage"];
+const FILTER_BAR_FIELDS = ["country", "accountOwner", "leadOwner", "priority", "nbaType", "ownershipType", "stage", "exclusivityStatus"];
 
 const BASE_SCOPES = {
   activeNbaOnly: [
@@ -172,6 +173,7 @@ function heuristicChoices(prompt) {
   // headline segmentations so they precede the weaker priority/owner cues.
   let rowDimension = "nbaType";
   if (has(/\bnba\b|next best|by action|action type|thesis/)) rowDimension = "nbaType";
+  else if (has(/exclusiv/)) rowDimension = "exclusivityStatus";
   else if (has(/ownership|owner[- ]?type|founder[- ]?owned|pe[- ]?owned|structure|who owns/)) rowDimension = "ownershipType";
   else if (has(/\bstage\b|pipeline|funnel/)) rowDimension = "stage";
   else if (has(/by (rep|account owner)|\bper rep\b|account owner/)) rowDimension = "accountOwner";

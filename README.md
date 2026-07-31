@@ -44,15 +44,44 @@ zero network risk. On Vercel, set `ANTHROPIC_API_KEY` in project env vars.
 
 - `server/` — Express (local: `server/index.js`; Vercel: `api/index.js`, same app).
   - `/api/targets` — full account state incl. conversation signals & cached analyses
+  - `/api/accounts` — create a new account (**+ New** in the Pipeline); exclusivity
+    auto-assigned to the Account Owner for 6 months.
+    `/api/accounts/:id/enrich` runs the AI enrichment pass (full scraping schema,
+    signals, financial estimates — deterministic mock without a key)
   - `/api/enrich` — signal sweep per account
   - `/api/analyze` — SSE: agent trace + structured-JSON analysis (claude-opus-5,
     cached server-side per account; `force` re-analyzes)
-  - `/api/act` — executes approved actions: real rescoring rationale, simulated
-    side effects that persist (scores, blockers, tasks, log, next-touch cadence)
+  - `/api/act` — executes approved actions: real rescoring rationale, side effects
+    that persist to the database (scores, blockers, tasks, log, next-touch cadence)
   - `/api/simulate` — plays a target's scripted predicted reply (the payoff moment)
   - `/api/brief` — one-page pre-meeting brief per account
   - `/api/digest` — weekly portfolio sweep digest
+  - `/api/query` — executes a filter definition against the live database, returns
+    matching accounts + aggregates (one code path for Insights widgets & drill-downs)
+  - `/api/insights/*` — saved dashboards & reports (definitions, never snapshots;
+    every open re-queries the live database with a fresh "as of" timestamp)
   - `/api/task`, `/api/reset`, `/api/aicheck` — task toggles, demo reset, diagnostics
+- `server/store.js` — **persistent storage layer.** Route logic never touches
+  storage directly; the working set lives in memory and every mutation writes
+  through. Backend selected by env:
+  - **Local dev (default):** `server/data/db.json` — survives restarts, inspectable,
+    gitignored.
+  - **Deployed:** set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`
+    (Vercel KV's `KV_REST_API_URL`/`KV_REST_API_TOKEN` also work) for a durable
+    free-tier store. Plain REST — no extra dependency.
+  - **Neither available** (e.g. bare Vercel): falls back to seeded in-memory data
+    per warm instance, the pre-Phase-3 behavior.
+- `server/state.js` — the database is the single source of truth. On first run the
+  six demo companies migrate from `targets.js` into the DB as ordinary records
+  (origin: `seed`) with staggered exclusivity backfill (Active / Expiring Soon /
+  Expired); from then on they're editable and re-scorable through the same code
+  paths as user-created accounts. `targets.js` remains only as the seed source.
+  `⟲` reset restores the demo companies to their seeded state but preserves
+  user-created accounts and saved Insights definitions.
+- `server/exclusivity.js` — 6-month exclusivity records tied to the Account Owner;
+  status (Active / Expiring Soon / Expired) is always computed from the dates.
+- `server/accounts.js` — new-account skeleton + AI enrichment (exact 20-field
+  scraping schema, validated server-side; plausible mock offline).
 - `server/data/targets.js` — six seeded top-funnel accounts + the deal-twin pattern
   library (silent founders, dead-deal revival, intermediary effect…). The hero,
   Vantage, carries a KIU-density history: 38 touches, 4 reps, RCE campaigns, full
@@ -60,11 +89,12 @@ zero network risk. On Vercel, set `ANTHROPIC_API_KEY` in project env vars.
 - `server/conversation.js` — parses any activity log into scored likelihood
   indicators (reply rate, inbound recency, reconnect campaigns, escalation depth,
   sentiment trajectory, silence pattern). Generic — ready for real Salesforce exports.
+- `server/insights/` — account-row derivation (NBA type, ownership, exclusivity
+  status), declarative filter/KPI/grid engine, prompt→dashboard-spec generator.
 - `src/` — React (Vite): Pipeline (sortable/filterable list, FLIP re-rank,
-  sparklines), War Room (meters, factor modals, insights, activity + sentiment arc),
-  Mission Control (digest, touches due, tasks).
+  sparklines, **+ New** account modal, exclusivity column), War Room (meters,
+  factor modals, insights, activity + sentiment arc), Mission Control (digest,
+  touches due, tasks), Insights (saved dashboards/reports over the live database).
 
-Note: deal state is in-memory (per server process / warm serverless instance).
-Fine for demos; move to a KV store before multi-user use.
-
-All companies, people, and events in the seed data are fictional.
+All companies, people, and events in the seed data are fictional; AI enrichment
+of user-created accounts generates plausible demo data, not real firmographics.

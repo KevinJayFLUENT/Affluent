@@ -2,5 +2,7 @@ node_modules/
 dist/
 .env
 
-# Insights runtime store (seeded defaults live in code; user-created objects are ephemeral)
+# Local database (seeds migrate in on first run; see server/store.js)
+server/data/db.json
+# Legacy insights store (pre-Phase-3; now lives in db.json)
 server/data/dashboards.store.json

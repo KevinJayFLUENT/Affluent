@@ -57,6 +57,27 @@ export async function executeAction(payload) {
   return res.json();
 }
 
+// ── New account creation + enrichment ──────────────────────────────────────
+export async function createAccount(input) {
+  const res = await fetch("/api/accounts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "create failed");
+  return res.json();
+}
+
+export async function enrichNewAccount(accountId) {
+  const res = await fetch(`/api/accounts/${accountId}/enrich`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "enrichment failed");
+  return res.json();
+}
+
 // ── Insights: persistent Reports & Dashboards ──────────────────────────────
 export async function listInsights() {
   const res = await fetch("/api/insights/dashboards");

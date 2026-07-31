@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { fetchTargets, enrichTarget, toggleTask, runDigest } from "./api.js";
+import { fetchTargets, enrichTarget, toggleTask, runDigest, createAccount, enrichNewAccount } from "./api.js";
 import Board from "./components/Board.jsx";
 import WarRoom from "./components/WarRoom.jsx";
 import MyDay from "./components/MyDay.jsx";
 import Insights from "./components/Insights.jsx";
+import NewAccount from "./components/NewAccount.jsx";
 import Logo from "./components/Logo.jsx";
 import FluentLogo from "./components/FluentLogo.jsx";
 import { RotateCcw } from "./components/Icons.jsx";
@@ -20,6 +21,7 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [digest, setDigest] = useState(null);
   const [digestRunning, setDigestRunning] = useState(false);
+  const [showNewAccount, setShowNewAccount] = useState(false);
   const sweepStarted = useRef(false);
 
   useEffect(() => {
@@ -89,6 +91,29 @@ export default function App() {
     }
   }
 
+  // "New" account: create instantly (row appears in scanning state), then run
+  // the AI enrichment pass with the same sweep treatment seeded accounts get.
+  async function handleCreateAccount(input) {
+    const { target, logEntry } = await createAccount(input);
+    setTargets((prev) => [...prev, target]);
+    setLog((prev) => [logEntry, ...prev]);
+    setShowNewAccount(false);
+    setView({ name: "board" });
+    showToast(`${target.company} created — agent enrichment sweep running…`);
+    try {
+      const result = await enrichNewAccount(target.id);
+      setTargets((prev) =>
+        prev.map((p) => (p.id === target.id ? { ...result.target, justEnriched: true } : p))
+      );
+      showToast(`${target.company} enriched — likelihood ${result.before} → ${result.after}`);
+    } catch (err) {
+      console.error("enrichment failed:", err);
+      showToast(`${target.company}: enrichment failed — account saved, retry from the row`);
+    }
+  }
+
+  const owners = [...new Set(targets.map((t) => t.details?.accountOwner).filter(Boolean))].sort();
+
   const active = view.name === "warroom" ? targets.find((t) => t.id === view.targetId) : null;
   const dueCount = targets.filter((t) => t.nextTouch && t.nextTouch.due <= TODAY).length;
   const openTaskCount = tasks.filter((t) => !t.done).length;
@@ -155,6 +180,15 @@ export default function App() {
           log={log}
           onOpen={(id) => setView({ name: "warroom", targetId: id })}
           onGoMyDay={() => setView({ name: "myday" })}
+          onNew={() => setShowNewAccount(true)}
+        />
+      )}
+
+      {showNewAccount && (
+        <NewAccount
+          owners={owners}
+          onClose={() => setShowNewAccount(false)}
+          onCreate={handleCreateAccount}
         />
       )}
 

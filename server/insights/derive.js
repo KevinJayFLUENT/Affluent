@@ -10,6 +10,8 @@
 // than stored on the seed records — so the classification stays in one place
 // and reflects the account as it currently is (post-enrichment, post-action).
 
+import { exclusivityStatus } from "../exclusivity.js";
+
 const DAY = 86400000;
 
 const COUNTRY_NAMES = {
@@ -109,7 +111,9 @@ export function accountRow(t, today = new Date()) {
     scoreDelta: current - original,
     closeScore: t.scores?.close ?? 0,
     catalystFlag: (t.signals || []).some((s) => s.catalyst),
-    exclusivityStatus: t.details?.exclusivity?.status || "None",
+    exclusivityStatus: exclusivityStatus(t.details?.exclusivity, today) || "None",
+    exclusivityOwner: t.details?.exclusivity?.owner || null,
+    exclusivityEnds: t.details?.exclusivity?.endDate || null,
     lastActivityDate: last,
     daysSinceActivity: last ? Math.round((today - new Date(last)) / DAY) : null,
     triggerInDays: t.nextTouch?.due ? Math.round((new Date(t.nextTouch.due) - today) / DAY) : null,
@@ -145,7 +149,9 @@ export const FIELD_CATALOG = {
   scoreDelta: { label: "Score Change", type: "number" },
   closeScore: { label: "Close Probability", type: "number" },
   catalystFlag: { label: "Catalyst Active", type: "boolean" },
-  exclusivityStatus: { label: "Exclusivity Status", type: "string" },
+  exclusivityStatus: { label: "Exclusivity Status", type: "enum", values: ["Active", "Expiring Soon", "Expired", "None"] },
+  exclusivityOwner: { label: "Exclusive Owner", type: "string" },
+  exclusivityEnds: { label: "Exclusivity Ends", type: "date" },
   lastActivityDate: { label: "Last Activity", type: "date" },
   daysSinceActivity: { label: "Days Without Engagement", type: "number" },
   triggerInDays: { label: "Time to Trigger (days)", type: "number" },

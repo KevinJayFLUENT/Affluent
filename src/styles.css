@@ -962,3 +962,31 @@ body {
 .mono { font-variant-numeric: tabular-nums; }
 .delta-pos { color: var(--green); font-weight: 650; font-variant-numeric: tabular-nums; }
 .delta-neg { color: var(--red); font-weight: 650; font-variant-numeric: tabular-nums; }
+
+/* ── Exclusivity chips ───────────────────────────────────── */
+.exc-chip {
+  display: inline-flex; flex-direction: column; gap: 1px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.2px;
+  border-radius: 7px; padding: 3px 9px; border: 1px solid; white-space: nowrap;
+}
+.exc-chip .exc-date { font-size: 10px; font-weight: 500; opacity: 0.75; font-variant-numeric: tabular-nums; }
+.exc-active { color: var(--green); background: var(--green-soft); border-color: #bbe5c8; }
+.exc-expiring { color: var(--amber); background: var(--amber-soft); border-color: #f5dcae; }
+.exc-expired { color: var(--red); background: var(--red-soft); border-color: #f2c4c4; }
+
+/* ── New Account modal ───────────────────────────────────── */
+.na-modal { max-width: 640px; }
+.na-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; margin-bottom: 14px; }
+.na-field span {
+  display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;
+  font-weight: 600; color: var(--text-faint); margin-bottom: 4px;
+}
+.na-field.na-wide { grid-column: 1 / -1; }
+.na-input { width: 100%; max-width: none; }
+select.na-input { cursor: pointer; }
+.na-error {
+  background: var(--red-soft); color: var(--red); border: 1px solid #f2c4c4;
+  border-radius: 8px; padding: 8px 12px; font-size: 12.5px; margin-bottom: 12px;
+}
+.na-actions { display: flex; justify-content: flex-end; gap: 10px; }
+@media (max-width: 640px) { .na-grid { grid-template-columns: 1fr; } }
