@@ -78,47 +78,58 @@ const MARKS = {
       <circle cx="9.5" cy="42" r="4.6" fill="#0d6ef5" />
     </svg>
   ),
-  // Kestrel: shield + check, wing notch (compliance with a raptor's edge)
+  // Kestrel: falcon badge — navy disc, diving falcon, green waveform ring
   kestrel: (
-    <svg viewBox="0 0 48 48" width="72%" height="72%">
-      <path d="M24 5 L40 11 V24 C40 33 33 40 24 43 C15 40 8 33 8 24 V11 Z" fill="#ffffff" />
-      <path d="M15.5 24.5 L21.5 30.5 L33 18" fill="none" stroke="#0b7285" strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M31 7.5 L40 4 L36.5 12" fill="#ffffff" />
+    <svg viewBox="0 0 48 48" width="90%" height="90%">
+      {Array.from({ length: 28 }, (_, i) => {
+        const a = (i * 360) / 28;
+        const r1 = 19.5, r2 = i % 2 ? 23 : 21;
+        const rad = (a * Math.PI) / 180;
+        return (
+          <line
+            key={i}
+            x1={24 + r1 * Math.cos(rad)} y1={24 + r1 * Math.sin(rad)}
+            x2={24 + r2 * Math.cos(rad)} y2={24 + r2 * Math.sin(rad)}
+            stroke="#2fae4a" strokeWidth="1.3"
+          />
+        );
+      })}
+      <circle cx="24" cy="24" r="17.5" fill="#14265c" />
+      <path d="M14 13 C22 8 31 11 34 18 C30 16.5 27 17.5 25 20 C29 22 31 27 29 33.5 C26 29.5 21.5 27.5 17.5 29 C20.5 24.5 18 18 14 13 Z" fill="#c98e4b" />
+      <circle cx="31" cy="16.5" r="2.6" fill="#f0e8d8" />
+      <path d="M33.2 15.8 L35.6 16.8 L33.4 17.9 Z" fill="#2b2b2b" />
     </svg>
   ),
-  // Orbita: planet + tilted orbit ring with satellite
+  // Orbita: the "o" glyph — black ring with a cyan swirl
   orbita: (
-    <svg viewBox="0 0 48 48" width="78%" height="78%">
-      <circle cx="24" cy="24" r="9" fill="#ffffff" />
-      <ellipse cx="24" cy="24" rx="19" ry="7.5" fill="none" stroke="#ffffff" strokeWidth="2.6" transform="rotate(-24 24 24)" />
-      <circle cx="39.5" cy="14.5" r="3.4" fill="#ffffff" />
-    </svg>
-  ),
-  // Brightspan: sunrise over a span
-  brightspan: (
     <svg viewBox="0 0 48 48" width="76%" height="76%">
-      <path d="M12 30 A12 12 0 0 1 36 30 Z" fill="#ffffff" />
-      <g stroke="#ffffff" strokeWidth="3" strokeLinecap="round">
-        <line x1="24" y1="8" x2="24" y2="13" />
-        <line x1="11" y1="13" x2="14.5" y2="16.5" />
-        <line x1="37" y1="13" x2="33.5" y2="16.5" />
-      </g>
-      <path d="M7 38 C15 33.5 33 33.5 41 38" fill="none" stroke="#ffffff" strokeWidth="3.4" strokeLinecap="round" />
+      <circle cx="24" cy="24" r="11" fill="none" stroke="#1a1414" strokeWidth="8.5" />
+      <path d="M13.6 20.4 A11 11 0 0 1 28.2 13.8" fill="none" stroke="#19c1f3" strokeWidth="8.5" strokeLinecap="round" />
     </svg>
   ),
-  // Cobalt: hexagon cell + three-blade fan (airflow)
+  // Brightspan: gold double arch with sunrise rays at the crest
+  brightspan: (
+    <svg viewBox="0 0 48 48" width="84%" height="84%">
+      <g stroke="#c99a3a" strokeWidth="1.7" strokeLinecap="round">
+        <line x1="23" y1="9" x2="23" y2="4" />
+        <line x1="17.5" y1="10.5" x2="15.5" y2="6" />
+        <line x1="28.5" y1="10.5" x2="30.5" y2="6" />
+        <line x1="13" y1="13.5" x2="9.5" y2="10" />
+        <line x1="33" y1="13.5" x2="36.5" y2="10" />
+      </g>
+      <path d="M4 33 C13 15 33 16 44 30 L44 33.5 C33 20 14 19 7 35 Z" fill="#e3b95b" />
+      <path d="M4 41 C16 24 36 26 44 39 L44 42 C35 30 17 29 8 43 Z" fill="#c99a3a" />
+    </svg>
+  ),
+  // Cobalt: faceted hexagonal crystal ring in layered blues
   cobalt: (
     <svg viewBox="0 0 48 48" width="76%" height="76%">
-      <path d="M24 5 L39.5 14 V33 L24 42 L8.5 33 V14 Z" fill="none" stroke="#ffffff" strokeWidth="2.8" strokeLinejoin="round" />
-      {[0, 120, 240].map((deg) => (
-        <path
-          key={deg}
-          d="M24 23 C26 17.5 25 12.5 21.5 10.5 C28 11 31.5 15.5 29 21.5 C27.8 24 25.2 24.5 24 23 Z"
-          fill="#ffffff"
-          transform={`rotate(${deg} 24 24)`}
-        />
-      ))}
-      <circle cx="24" cy="24" r="2.6" fill="#ffffff" />
+      <polygon points="24,7 38.7,15.5 31.8,19.5 24,15" fill="#1a4b9e" />
+      <polygon points="38.7,15.5 38.7,32.5 31.8,28.5 31.8,19.5" fill="#1c1a4e" />
+      <polygon points="38.7,32.5 24,41 24,33 31.8,28.5" fill="#8fa8d0" />
+      <polygon points="24,41 9.3,32.5 16.2,28.5 24,33" fill="#1a4b9e" />
+      <polygon points="9.3,32.5 9.3,15.5 16.2,19.5 16.2,28.5" fill="#23205a" />
+      <polygon points="9.3,15.5 24,7 24,15 16.2,19.5" fill="#c7d4ea" />
     </svg>
   ),
   // Hartline: hatched heart, blue grid, C, EKG trace

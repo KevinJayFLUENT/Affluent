@@ -50,9 +50,16 @@ function TouchRow({ t, onOpen, upcoming }) {
 
 export default function MyDay({ targets, tasks, log = [], digest, onOpen, onToggleTask, onRunDigest, digestRunning }) {
   const [showDone, setShowDone] = useState(false);
-  const [sweepOwner, setSweepOwner] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("");
   const autoRan = useRef(false);
   const owners = [...new Set(targets.map((t) => t.details?.accountOwner || t.owner.name))].sort();
+  const ownerOf = (t) => t.details?.accountOwner || t.owner.name;
+
+  // Page-level owner scope: everything below follows it.
+  const scoped = ownerFilter ? targets.filter((t) => ownerOf(t) === ownerFilter) : targets;
+  const scopedIds = new Set(scoped.map((t) => t.id));
+  const scopedTasks = ownerFilter ? tasks.filter((t) => scopedIds.has(t.targetId)) : tasks;
+  const scopedLog = ownerFilter ? log.filter((e) => scopedIds.has(e.targetId)) : log;
 
   // First visit with no digest: run the sweep so the page is never empty.
   useEffect(() => {
@@ -62,7 +69,7 @@ export default function MyDay({ targets, tasks, log = [], digest, onOpen, onTogg
     }
   }, []);
 
-  const touches = targets
+  const touches = scoped
     .filter((t) => t.nextTouch)
     .sort((a, b) => a.nextTouch.due.localeCompare(b.nextTouch.due));
   const dueNow = touches.filter((t) => t.nextTouch.due <= TODAY);
@@ -70,11 +77,11 @@ export default function MyDay({ targets, tasks, log = [], digest, onOpen, onTogg
   const thisWeek = upcoming.filter((t) => daysUntil(t.nextTouch.due) <= 7);
   const nextWeek = upcoming.filter((t) => daysUntil(t.nextTouch.due) > 7 && daysUntil(t.nextTouch.due) <= 14);
   const later = upcoming.filter((t) => daysUntil(t.nextTouch.due) > 14);
-  const openTasks = tasks.filter((t) => !t.done);
-  const doneTasks = tasks.filter((t) => t.done);
+  const openTasks = scopedTasks.filter((t) => !t.done);
+  const doneTasks = scopedTasks.filter((t) => t.done);
 
   // Score movers since session start (seed score = first history point).
-  const movers = targets
+  const movers = scoped
     .map((t) => ({ t, delta: (t.scoreHistory?.at(-1) ?? t.scores.likelihood) - (t.scoreHistory?.[0] ?? t.scores.likelihood) }))
     .filter((m) => m.delta !== 0)
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
@@ -92,28 +99,30 @@ export default function MyDay({ targets, tasks, log = [], digest, onOpen, onTogg
           <p className="board-sub">
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })} ·{" "}
             {dueNow.length} touch{dueNow.length === 1 ? "" : "es"} due · {openTasks.length} open task{openTasks.length === 1 ? "" : "s"}
+            {ownerFilter && ` · viewing ${ownerFilter}'s book`}
           </p>
         </div>
+        <label className="owner-scope">
+          <span>Book</span>
+          <select className="col-filter" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
+            <option value="">All owners</option>
+            {owners.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </label>
       </div>
 
       {/* Weekly portfolio sweep digest */}
       <section className="panel digest">
         <div className="panel-head">
           <h3>Weekly Portfolio Sweep</h3>
-          <span className="sweep-controls">
-            <select
-              className="col-filter sweep-owner"
-              value={sweepOwner}
-              onChange={(e) => setSweepOwner(e.target.value)}
-              title="Scope the sweep to one deal lead's book, or the whole house"
-            >
-              <option value="">All owners</option>
-              {owners.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
-            <button className="digest-btn" onClick={() => onRunDigest(sweepOwner || null)} disabled={digestRunning}>
-              {digestRunning ? "Sweeping…" : digest ? <><RotateCcw size={12} /> Re-run sweep</> : <><Play size={11} /> Run sweep</>}
-            </button>
-          </span>
+          <button
+            className="digest-btn"
+            onClick={() => onRunDigest(ownerFilter || null)}
+            disabled={digestRunning}
+            title={ownerFilter ? `Sweep ${ownerFilter}'s book` : "Sweep the entire book"}
+          >
+            {digestRunning ? "Sweeping…" : digest ? <><RotateCcw size={12} /> Re-run sweep</> : <><Play size={11} /> Run sweep</>}
+          </button>
         </div>
         {digestRunning && !digest && (
           <div className="analyzing" style={{ border: "none", padding: "8px 0", margin: 0, boxShadow: "none" }}>
@@ -252,11 +261,11 @@ export default function MyDay({ targets, tasks, log = [], digest, onOpen, onTogg
       <section className="panel">
         <div className="panel-head">
           <h3>Recent Agent Activity</h3>
-          <span className="panel-tag">{log.length} event{log.length === 1 ? "" : "s"}</span>
+          <span className="panel-tag">{scopedLog.length} event{scopedLog.length === 1 ? "" : "s"}</span>
         </div>
-        {!log.length && <p className="muted">Quiet so far — approvals, rescores, and confirmed predictions will land here.</p>}
+        {!scopedLog.length && <p className="muted">Quiet so far — approvals, rescores, and confirmed predictions will land here.</p>}
         <div className="activity-feed">
-          {log.slice(0, 8).map((e) => (
+          {scopedLog.slice(0, 8).map((e) => (
             <div key={e.id} className="feed-row" onClick={() => onOpen(e.targetId)}>
               <span className="feed-icon"><Check size={11} /></span>
               <div className="feed-body">

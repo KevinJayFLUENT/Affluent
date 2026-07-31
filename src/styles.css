@@ -626,6 +626,14 @@ body {
 
 .muted { color: var(--text-faint); font-size: 13px; }
 
+/* Footer */
+.app-footer {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  margin-top: 48px; padding: 20px 0 4px;
+  border-top: 1px solid var(--line);
+  color: var(--text-faint); font-size: 12.5px;
+}
+
 /* Main nav */
 .main-nav { display: flex; gap: 4px; margin-left: 28px; margin-right: auto; }
 .nav-link {
@@ -665,8 +673,8 @@ body {
 
 /* My Day */
 .myday { max-width: 860px; }
-.sweep-controls { display: inline-flex; align-items: center; gap: 8px; }
-.sweep-owner { width: auto; min-width: 120px; }
+.owner-scope { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px; font-weight: 600; color: var(--text-faint); }
+.owner-scope .col-filter { width: auto; min-width: 130px; text-transform: none; letter-spacing: 0; font-weight: 400; }
 .digest .digest-btn {
   background: var(--panel); border: 1px solid var(--blue); color: var(--blue);
   border-radius: 7px; padding: 6px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;

@@ -224,6 +224,11 @@ export default function App() {
       )}
 
       {toast && <div className="toast">{toast}</div>}
+
+      <footer className="app-footer">
+        <FluentLogo size={22} />
+        <span>a Fluent Corporation operated tool</span>
+      </footer>
     </div>
   );
 }
