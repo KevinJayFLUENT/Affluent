@@ -64,6 +64,7 @@ body {
   border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 14px;
 }
 .reset-btn:hover { color: var(--text-dim); border-color: var(--text-faint); }
+.fluent-mark { display: inline-flex; align-items: center; margin-left: 6px; padding-left: 14px; border-left: 1px solid var(--line); }
 
 /* ── Board ───────────────────────────────── */
 .board-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 20px; }
@@ -671,10 +672,12 @@ body {
 .digest .digest-btn:hover:not(:disabled) { background: var(--blue-soft); }
 .digest .digest-btn:disabled { opacity: 0.5; cursor: default; }
 .digest-headline { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.digest-summary { color: var(--text-dim); font-size: 13.5px; }
 .digest-priorities { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px; }
 .priority-row {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 8px 11px; border-radius: 8px; border: 1px solid var(--line-soft);
+  position: relative;
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line-soft);
   background: var(--panel-2); font-size: 13px; color: var(--text-dim);
 }
 .priority-click { cursor: pointer; transition: border-color 0.12s ease; }
@@ -683,10 +686,30 @@ body {
 .priority-num {
   background: var(--blue-soft); color: var(--blue); border-radius: 6px;
   width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;
-  font-size: 10.5px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+  font-size: 10.5px; font-weight: 700; flex-shrink: 0;
 }
+.priority-body { flex: 1; min-width: 0; }
+.priority-action { font-weight: 600; color: var(--text); }
+.priority-company { font-size: 11.5px; color: var(--text-faint); margin-top: 1px; }
 .priority-text { flex: 1; }
-.priority-go { color: var(--blue); opacity: 0.35; flex-shrink: 0; margin-top: 2px; }
+.priority-go { color: var(--blue); opacity: 0.35; flex-shrink: 0; }
+.urgency-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 999px;
+  text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; flex-shrink: 0;
+  border: 1px solid transparent;
+}
+.urgency-now { background: var(--red-soft); color: var(--red); border-color: #f3caca; }
+.urgency-this-week { background: var(--amber-soft); color: var(--amber); border-color: #f5dcae; }
+.urgency-watch { background: var(--panel); color: var(--text-dim); border-color: var(--line); }
+.pri-tip {
+  position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 40; width: 300px;
+  background: var(--text); color: #e8ebef; font-size: 11.5px; line-height: 1.55; font-weight: 400;
+  border-radius: 8px; padding: 10px 13px; box-shadow: 0 8px 24px rgba(16, 24, 40, 0.25);
+  opacity: 0; visibility: hidden; transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  pointer-events: none; white-space: normal;
+}
+.priority-row:hover .pri-tip { opacity: 1; visibility: visible; transform: translateY(0); }
 .digest-meta { color: var(--text-faint); font-size: 11.5px; border-top: 1px solid var(--line-soft); padding-top: 8px; }
 
 .touch-list { display: flex; flex-direction: column; gap: 8px; }

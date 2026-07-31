@@ -63,20 +63,35 @@ app.post("/api/digest", async (req, res) => {
     }
   }
   if (!digest) {
+    const weekAhead = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    const dueThisWeek = state.targets.filter((t) => t.nextTouch && t.nextTouch.due > today && t.nextTouch.due <= weekAhead);
     digest = {
       headline: `${catalysts.length} catalyst${catalysts.length === 1 ? "" : "s"} active · ${dueSoon.length} touch${dueSoon.length === 1 ? "" : "es"} due or overdue`,
-      brief:
-        `Swept ${state.targets.length} accounts. ${top.company} leads the board at ${top.scores.likelihood} likelihood` +
-        `${catalysts.length ? ` with an active catalyst — the dead-deal-revival window is open and cooling` : ""}. ` +
-        (dueSoon.length
-          ? `${dueSoon.map((t) => t.company).join(" and ")} ${dueSoon.length === 1 ? "has" : "have"} touches at or past their prescribed date — silence past the date is how deals die quietly. `
-          : "No touches are overdue. ") +
-        `The rest of the book is on archetype cadence: dates are set, drafts are staged, nothing needs forcing.`,
+      summary:
+        `${top.company} leads the board at ${top.scores.likelihood}` +
+        (dueSoon.length ? `; ${dueSoon.map((t) => t.company.split(" ")[0]).join(" and ")} need${dueSoon.length === 1 ? "s" : ""} action before deals die quietly` : "; the book is on cadence") +
+        `.`,
       priorities: [
-        ...dueSoon.map((t) => `${t.company}: ${t.nextTouch.action}`),
+        ...dueSoon.map((t) => ({
+          company: t.company,
+          action: t.nextTouch.action,
+          why: t.nextTouch.reason,
+          urgency: "now",
+        })),
         ...(catalysts.length && !dueSoon.some((t) => t.id === catalysts[0].id)
-          ? [`${catalysts[0].company}: act on the catalyst before a rival reads the same news`]
+          ? [{
+              company: catalysts[0].company,
+              action: "Act on the catalyst before a rival reads the same news",
+              why: catalysts[0].signals.find((s) => s.catalyst)?.detail || "Catalyst active.",
+              urgency: "now",
+            }]
           : []),
+        ...dueThisWeek.map((t) => ({
+          company: t.company,
+          action: t.nextTouch.action,
+          why: t.nextTouch.reason,
+          urgency: "this-week",
+        })),
       ].slice(0, 4),
       source: "cached",
     };

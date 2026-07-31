@@ -150,11 +150,24 @@ export async function analyzeTarget(target, patternLibrary, conversationSignals 
 const DIGEST_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["headline", "brief", "priorities"],
+  required: ["headline", "summary", "priorities"],
   properties: {
     headline: { type: "string" },
-    brief: { type: "string" },
-    priorities: { type: "array", items: { type: "string" } },
+    summary: { type: "string" },
+    priorities: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["company", "action", "why", "urgency"],
+        properties: {
+          company: { type: "string" },
+          action: { type: "string" },
+          why: { type: "string" },
+          urgency: { type: "string", enum: ["now", "this-week", "watch"] },
+        },
+      },
+    },
   },
 };
 
@@ -163,17 +176,20 @@ const DIGEST_SCHEMA = {
 export async function writeDigest(portfolio, patternLibrary) {
   const response = await createWithFallbackModels({
     model: MODEL,
-    max_tokens: 1200,
+    max_tokens: 1500,
     output_config: {
       effort: "low",
       format: { type: "json_schema", schema: DIGEST_SCHEMA },
     },
     system:
-      "You are the intelligence engine of TCan Express, an M&A CRM. Write the weekly portfolio sweep digest for Kevin Jay (Corp Dev deal lead). " +
-      "Input: a compact snapshot of every account. Output: headline (one punchy line, e.g. '1 catalyst burning, 2 touches overdue'), " +
-      "brief (3-5 sentences: what changed, what's warming, what's at risk of dying quietly — cite companies and numbers), " +
-      "priorities (3-4 imperative one-liners, most urgent first, each naming the company and the move). " +
-      "Be concrete and direct; no filler. Reference pattern-library analogs where they sharpen the point.\n\n" + patternLibrary,
+      "You are the intelligence engine of TCan Express, an M&A CRM. Write the weekly portfolio sweep for Kevin Jay (Corp Dev deal lead). " +
+      "It must be scannable in ten seconds. Output: " +
+      "headline — one punchy line, max 10 words (e.g. 'One catalyst burning, two touches overdue'). " +
+      "summary — EXACTLY ONE sentence: the net read of the book this week. " +
+      "priorities — 3 to 4 items, most urgent first. Each: company (EXACTLY matching an account name from the input), " +
+      "action (imperative, max 12 words — what to do), why (1-2 sentences shown on hover: the reasoning, citing the record and the pattern-library analog), " +
+      "urgency ('now' = due/overdue or a cooling catalyst, 'this-week' = time-boxed soon, 'watch' = don't touch yet but monitor). " +
+      "No filler anywhere — every word must earn its place.\n\n" + patternLibrary,
     messages: [{ role: "user", content: JSON.stringify(portfolio) }],
   });
   return extractJson(response);

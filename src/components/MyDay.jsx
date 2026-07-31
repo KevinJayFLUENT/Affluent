@@ -111,20 +111,31 @@ export default function MyDay({ targets, tasks, log = [], digest, onOpen, onTogg
         {digest && (
           <>
             <div className="digest-headline">{digest.headline}</div>
-            <p>{digest.brief}</p>
-            <div className="factor-group-title" style={{ marginTop: 10 }}>This week's priorities</div>
+            {(digest.summary || digest.brief) && <p className="digest-summary">{digest.summary || digest.brief}</p>}
+            <div className="factor-group-title" style={{ marginTop: 12 }}>This week's priorities — hover for the why</div>
             <div className="digest-priorities">
               {digest.priorities.map((p, i) => {
-                const account = accountFor(p);
+                const isRich = typeof p === "object";
+                const label = isRich ? p.action : p;
+                const account = accountFor(isRich ? p.company || p.action : p);
                 return (
                   <div
                     key={i}
                     className={`priority-row ${account ? "priority-click" : ""}`}
                     onClick={account ? () => onOpen(account.id) : undefined}
                   >
-                    <span className="priority-num">{i + 1}</span>
-                    <span className="priority-text">{p}</span>
+                    {account ? <CompanyLogo target={account} size={26} /> : <span className="priority-num">{i + 1}</span>}
+                    <div className="priority-body">
+                      <div className="priority-action">{label}</div>
+                      {isRich && p.company && <div className="priority-company">{p.company}</div>}
+                    </div>
+                    {isRich && p.urgency && (
+                      <span className={`urgency-badge urgency-${p.urgency}`}>
+                        {p.urgency === "now" ? "Act now" : p.urgency === "this-week" ? "This week" : "Watch"}
+                      </span>
+                    )}
                     {account && <span className="priority-go"><ArrowUpRight size={13} /></span>}
+                    {isRich && p.why && <span className="pri-tip">{p.why}</span>}
                   </div>
                 );
               })}

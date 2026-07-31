@@ -5,6 +5,7 @@ import WarRoom from "./components/WarRoom.jsx";
 import MyDay from "./components/MyDay.jsx";
 import Insights from "./components/Insights.jsx";
 import Logo from "./components/Logo.jsx";
+import FluentLogo from "./components/FluentLogo.jsx";
 import { RotateCcw } from "./components/Icons.jsx";
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -121,6 +122,7 @@ export default function App() {
             onClick={() => setView({ name: "insights" })}
           >
             Insights
+            <span className="nav-tip">Prompt-built reports & dashboards — describe the view you want, the agent builds it, and it lives here re-evaluating against the live account base.</span>
           </button>
         </nav>
         <div className="topbar-right">
@@ -139,6 +141,9 @@ export default function App() {
           >
             <RotateCcw size={15} />
           </button>
+          <span className="fluent-mark" title="Fluent">
+            <FluentLogo size={30} />
+          </span>
         </div>
       </header>
 
