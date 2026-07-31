@@ -174,6 +174,9 @@ function FactorModal({ target, analysis, mode, onClose }) {
 }
 
 function BriefModal({ target, brief, loading, onClose, onRegenerate }) {
+  const [openPoints, setOpenPoints] = useState({});
+  const [fullOpen, setFullOpen] = useState(false);
+  const togglePoint = (i) => setOpenPoints((p) => ({ ...p, [i]: !p[i] }));
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -189,36 +192,56 @@ function BriefModal({ target, brief, loading, onClose, onRegenerate }) {
         )}
         {brief && !loading && (
           <div className="brief">
-            <p className="brief-context">{brief.meetingContext}</p>
+            {/* The scan layer: objective, points, landmines */}
             <div className="brief-objective">
               <label>Walk out with</label>
               {brief.objective}
             </div>
+
             <div className="brief-section">
-              <label>Relationship in one breath</label>
-              <p>{brief.relationshipRecap}</p>
-            </div>
-            <div className="brief-section">
-              <label>Talking points</label>
-              <ol className="brief-points">
+              <label>Talking points — tap a point for the why</label>
+              <div className="brief-points-list">
                 {brief.talkingPoints.map((tp, i) => (
-                  <li key={i}>
-                    <b>{tp.point}</b>
-                    <span> — {tp.why}</span>
-                  </li>
+                  <div key={i} className={`brief-point ${openPoints[i] ? "open" : ""}`} onClick={() => togglePoint(i)}>
+                    <span className="brief-point-num">{i + 1}</span>
+                    <div className="brief-point-body">
+                      <div className="brief-point-title">{tp.point}</div>
+                      {openPoints[i] && <div className="brief-point-why">{tp.why}</div>}
+                    </div>
+                    {openPoints[i] ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                  </div>
                 ))}
-              </ol>
+              </div>
             </div>
+
             <div className="brief-section">
               <label>Landmines — do not touch</label>
               <ul className="brief-landmines">
                 {brief.landmines.map((l, i) => <li key={i}>{l}</li>)}
               </ul>
             </div>
-            <div className="brief-ask">
-              <label>Closing the meeting</label>
-              {brief.theAsk}
-            </div>
+
+            {/* The depth layer: context, recap, closing */}
+            <button className="insight-more" onClick={() => setFullOpen(!fullOpen)}>
+              {fullOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />} {fullOpen ? "Hide full brief" : "Full brief — context, relationship, closing"}
+            </button>
+            {fullOpen && (
+              <div className="brief-full">
+                <div className="brief-section">
+                  <label>Why this meeting, why now</label>
+                  <p>{brief.meetingContext}</p>
+                </div>
+                <div className="brief-section">
+                  <label>Relationship in one breath</label>
+                  <p>{brief.relationshipRecap}</p>
+                </div>
+                <div className="brief-ask">
+                  <label>Closing the meeting</label>
+                  {brief.theAsk}
+                </div>
+              </div>
+            )}
+
             <div className="brief-meta">
               Generated {new Date(brief.generatedAt).toLocaleTimeString()} · {brief.source === "cached" ? "cached intelligence" : brief.source}
               <button className="insight-more" style={{ marginLeft: 12, padding: 0 }} onClick={onRegenerate}>↻ Regenerate</button>
