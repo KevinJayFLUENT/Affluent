@@ -54,11 +54,11 @@ export async function executeAction(payload) {
 }
 
 // POST-based SSE consumer: /api/analyze streams trace + analysis events.
-export async function analyzeTarget(targetId, { onTrace, onAnalysis }) {
+export async function analyzeTarget(targetId, { onTrace, onAnalysis }, force = false) {
   const res = await fetch("/api/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ targetId }),
+    body: JSON.stringify({ targetId, force }),
   });
   const reader = res.body.getReader();
   const decoder = new TextDecoder();

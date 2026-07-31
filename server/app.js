@@ -112,14 +112,30 @@ app.post("/api/analyze", async (req, res) => {
   res.flushHeaders();
   const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 
+  // Serve the cached analysis instantly unless a re-run was requested —
+  // every uncached open is a fresh (slow, billable) model call.
+  if (target.analysisCache && !req.body?.force) {
+    const meta = target.analysisMeta || {};
+    send("trace", { text: `Restoring analysis from cache (${meta.source || "cached"}, generated ${meta.generatedAt ? new Date(meta.generatedAt).toLocaleTimeString() : "earlier"})` });
+    send("trace", { text: "Use ↻ Re-analyze for a fresh read of the record" });
+    send("analysis", { targetId: target.id, analysis: target.analysisCache, meta, target });
+    return res.end();
+  }
+
   const conversationSignals = computeConversationSignals(target);
 
   // Kick off the real analysis immediately; trace steps pace alongside it.
+  let analysisSource = "cached";
   const analysisPromise = aiAvailable()
-    ? analyzeTarget(target, PATTERN_LIBRARY, conversationSignals).catch((err) => {
-        console.error("analyze fallback:", err.message);
-        return target.cachedAnalysis;
-      })
+    ? analyzeTarget(target, PATTERN_LIBRARY, conversationSignals)
+        .then((a) => {
+          analysisSource = "claude-opus-5";
+          return a;
+        })
+        .catch((err) => {
+          console.error("analyze fallback:", err.message);
+          return target.cachedAnalysis;
+        })
     : Promise.resolve(target.cachedAnalysis);
 
   const touches = target.activity.length;
@@ -151,11 +167,14 @@ app.post("/api/analyze", async (req, res) => {
     }
     send("trace", { text: "Synthesizing analysis (claude-opus-5)…" });
     const analysis = await analysisPromise;
+    const meta = { generatedAt: new Date().toISOString(), source: analysisSource };
+    target.analysisCache = analysis;
+    target.analysisMeta = meta;
     send("trace", { text: "Analysis complete — rendering War Room" });
-    send("analysis", { targetId: target.id, analysis, target });
+    send("analysis", { targetId: target.id, analysis, meta, target });
   } catch (err) {
     console.error("analyze stream error:", err.message);
-    send("analysis", { targetId: target.id, analysis: target.cachedAnalysis, target });
+    send("analysis", { targetId: target.id, analysis: target.cachedAnalysis, meta: null, target });
   }
   res.end();
 });

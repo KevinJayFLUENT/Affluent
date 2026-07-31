@@ -6,7 +6,7 @@ import CompanyLogo from "./CompanyLogo.jsx";
 import { DueBadge } from "./MyDay.jsx";
 import {
   Zap, ArrowUpRight, ArrowDownLeft, Check, X, FastForward, Mail,
-  ChevronDown, ChevronUp, Play, TrendingUp,
+  ChevronDown, ChevronUp, Play, TrendingUp, RotateCcw,
 } from "./Icons.jsx";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -331,13 +331,27 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
   const traceBodyRef = useRef(null);
   const started = useRef(false);
 
+  const [analysisMeta, setAnalysisMeta] = useState(target.analysisMeta || null);
+
+  function runAnalysis(force) {
+    if (force) {
+      setAnalysis(null);
+      setTrace([]);
+    }
+    analyzeTarget(target.id, {
+      onTrace: (t) => setTrace((prev) => [...prev, t.text]),
+      onAnalysis: (payload) => {
+        setAnalysis(payload.analysis);
+        setAnalysisMeta(payload.meta || null);
+        patchTarget(target.id, { analysisCache: payload.analysis, analysisMeta: payload.meta || null });
+      },
+    }, force).catch(() => setAnalysis(target.cachedAnalysis));
+  }
+
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    analyzeTarget(target.id, {
-      onTrace: (t) => setTrace((prev) => [...prev, t.text]),
-      onAnalysis: (payload) => setAnalysis(payload.analysis),
-    }).catch(() => setAnalysis(target.cachedAnalysis));
+    runAnalysis(false);
   }, [target.id]);
 
   // Auto-scroll ONLY the trace panel's own scrollbar — never the page.
@@ -587,6 +601,15 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
             <button className={`tab ${tab === "details" ? "active" : ""}`} onClick={() => setTab("details")}>
               Account Details
             </button>
+            {tab === "intelligence" && analysis && (
+              <span className="tab-meta">
+                {analysisMeta?.source === "claude-opus-5" ? "live analysis" : "cached analysis"}
+                {analysisMeta?.generatedAt && ` · ${new Date(analysisMeta.generatedAt).toLocaleTimeString()}`}
+                <button className="insight-more" style={{ padding: 0, marginLeft: 10 }} onClick={() => runAnalysis(true)}>
+                  <RotateCcw size={11} /> Re-analyze
+                </button>
+              </span>
+            )}
           </div>
 
           {tab === "details" && <AccountDetails target={target} />}
@@ -658,7 +681,8 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
                 </Panel>
               )}
 
-              {analysis && !(override && overrideBlocker) && primaryBlocker && (
+              {/* Original recommended action — only while nothing has been executed yet */}
+              {analysis && !(override && overrideBlocker) && primaryBlocker && executedActions.length === 0 && (
                 <Panel title="Next Best Action" tag="review & approve" tone="action">
                   <div className="action-title">{analysis.recommendedAction.title}</div>
                   <p>{analysis.recommendedAction.rationale}</p>
@@ -675,6 +699,20 @@ export default function WarRoom({ target, onBack, patchTarget, onActionExecuted 
                       {executing ? "Executing…" : <><Check size={13} /> Review & Approve</>}
                     </button>
                     <span className="action-note">Simulated send · state changes are real</span>
+                  </div>
+                </Panel>
+              )}
+
+              {/* After the first execution, the next open blocker speaks for itself */}
+              {analysis && !(override && overrideBlocker) && primaryBlocker && executedActions.length > 0 && (
+                <Panel title="Next Best Action" tag="review & approve" tone="action">
+                  <div className="action-title">{primaryBlocker.action.label}</div>
+                  <p>{primaryBlocker.detail}</p>
+                  <div className="action-buttons">
+                    <button className="approve-btn" disabled={executing} onClick={() => approve(primaryBlocker.action, null)}>
+                      {executing ? "Executing…" : <><Check size={13} /> Review & Approve</>}
+                    </button>
+                    <span className="action-note">Simulated execution · state changes are real</span>
                   </div>
                 </Panel>
               )}

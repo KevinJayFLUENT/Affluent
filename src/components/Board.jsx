@@ -149,6 +149,10 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
   const [query, setQuery] = useState("");
   const [catalystOnly, setCatalystOnly] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [colFilters, setColFilters] = useState({});
+  const setCF = (key, value) => setColFilters((f) => ({ ...f, [key]: value || undefined }));
+  const activeFilterCount = Object.values(colFilters).filter(Boolean).length + (catalystOnly ? 1 : 0);
 
   // FLIP: rows glide to their new position when the ranking changes.
   const rowRefs = useRef(new Map());
@@ -184,6 +188,21 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
     const q = query.trim().toLowerCase();
     let out = [...targets];
     if (catalystOnly) out = out.filter((t) => t.enriched && t.signals.some((s) => s.catalyst));
+    const f = colFilters;
+    if (f.company) out = out.filter((t) => (t.company + " " + t.vertical).toLowerCase().includes(f.company.toLowerCase()));
+    if (f.stage) out = out.filter((t) => (t.details?.stage || t.stage) === f.stage);
+    if (f.owner) out = out.filter((t) => (t.details?.accountOwner || t.owner.name) === f.owner);
+    if (f.nexttouch) {
+      out = out.filter((t) => {
+        const s = t.nextTouch ? dueStatus(t.nextTouch.due) : null;
+        return f.nexttouch === "due" ? s === "overdue" || s === "today" : s === f.nexttouch;
+      });
+    }
+    if (f.revenue) out = out.filter((t) => t.financials.revenue >= parseFloat(f.revenue));
+    if (f.ebitda) out = out.filter((t) => t.financials.ebitdaMargin >= parseFloat(f.ebitda));
+    if (f.arr) out = out.filter((t) => t.financials.arrPct >= parseFloat(f.arr));
+    if (f.close) out = out.filter((t) => t.scores.close >= parseFloat(f.close));
+    if (f.likelihood) out = out.filter((t) => t.scores.likelihood >= parseFloat(f.likelihood));
     if (q) {
       out = out.filter((t) =>
         [t.company, t.vertical, t.stage, t.owner.name, t.details?.industry]
@@ -198,7 +217,11 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
       return cmp * sort.dir;
     });
     return out;
-  }, [targets, sort, query, catalystOnly]);
+  }, [targets, sort, query, catalystOnly, colFilters]);
+
+  const distinct = (get) => [...new Set(targets.map(get).filter(Boolean))].sort();
+  const stages = distinct((t) => t.details?.stage || t.stage);
+  const owners = distinct((t) => t.details?.accountOwner || t.owner.name);
 
   return (
     <div className="board">
@@ -213,12 +236,6 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
             {sweepStatus === "idle" && "Loading pipeline…"}
           </p>
         </div>
-        {tasks.length > 0 && (
-          <div className="task-strip">
-            <div className="task-strip-title">Agent tasks ({tasks.length})</div>
-            <div className="task-strip-item">☐ {tasks[0].text}</div>
-          </div>
-        )}
       </div>
 
       {targets.length > 0 && (
@@ -265,6 +282,17 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <button
+          className={`filter-toggle ${showFilters || activeFilterCount ? "active" : ""}`}
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          Filters{activeFilterCount > 0 && <span className="nav-badge">{activeFilterCount}</span>}
+        </button>
+        {activeFilterCount > 0 && (
+          <button className="insight-more" onClick={() => { setColFilters({}); setCatalystOnly(false); }}>
+            Clear
+          </button>
+        )}
         <span className="list-count">{rows.length} of {targets.length} account{targets.length === 1 ? "" : "s"}</span>
       </div>
 
@@ -289,6 +317,44 @@ export default function Board({ targets, sweepStatus, tasks, onOpen, onGoMyDay }
                 </th>
               ))}
             </tr>
+            {showFilters && (
+              <tr className="filter-row">
+                <th />
+                <th><input className="col-filter" placeholder="Contains…" value={colFilters.company || ""} onChange={(e) => setCF("company", e.target.value)} /></th>
+                <th>
+                  <select className="col-filter" value={colFilters.stage || ""} onChange={(e) => setCF("stage", e.target.value)}>
+                    <option value="">Any</option>
+                    {stages.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </th>
+                <th>
+                  <select className="col-filter" value={colFilters.nexttouch || ""} onChange={(e) => setCF("nexttouch", e.target.value)}>
+                    <option value="">Any</option>
+                    <option value="due">Due or overdue</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="today">Today</option>
+                    <option value="upcoming">Upcoming</option>
+                  </select>
+                </th>
+                <th>
+                  <select className="col-filter" value={colFilters.owner || ""} onChange={(e) => setCF("owner", e.target.value)}>
+                    <option value="">Any</option>
+                    {owners.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </th>
+                <th><input className="col-filter" type="number" placeholder="≥ $M" value={colFilters.revenue || ""} onChange={(e) => setCF("revenue", e.target.value)} /></th>
+                <th><input className="col-filter" type="number" placeholder="≥ %" value={colFilters.ebitda || ""} onChange={(e) => setCF("ebitda", e.target.value)} /></th>
+                <th><input className="col-filter" type="number" placeholder="≥ %" value={colFilters.arr || ""} onChange={(e) => setCF("arr", e.target.value)} /></th>
+                <th><input className="col-filter" type="number" placeholder="≥" value={colFilters.close || ""} onChange={(e) => setCF("close", e.target.value)} /></th>
+                <th><input className="col-filter" type="number" placeholder="≥" value={colFilters.likelihood || ""} onChange={(e) => setCF("likelihood", e.target.value)} /></th>
+                <th>
+                  <select className="col-filter" value={catalystOnly ? "catalyst" : ""} onChange={(e) => setCatalystOnly(e.target.value === "catalyst")}>
+                    <option value="">Any</option>
+                    <option value="catalyst">Catalyst</option>
+                  </select>
+                </th>
+              </tr>
+            )}
           </thead>
           <tbody>
             {rows.map((t) => {
