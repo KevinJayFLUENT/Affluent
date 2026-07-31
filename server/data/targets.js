@@ -678,7 +678,7 @@ export function seedTargets() {
       company: "Plexa Marina Cloud",
       vertical: "Marina & boatyard management SaaS",
       location: "Annapolis, MD",
-      brand: { color: "#364fc7", initials: "PX" },
+      brand: { light: true, initials: "PX", mark: "plexa" },
       stage: "New — no outreach yet",
       owner: {
         name: "Jess Okafor",
@@ -744,6 +744,188 @@ export function seedTargets() {
           artifact:
             "Subject: Marina software — from someone who collects vertical SaaS stories\n\nJess,\n\nI lead acquisitions at Fluent — we own and grow niche software companies (we never flip them). Not writing to pitch anything: Plexa keeps coming up when marina operators talk software, and I just wanted to know the person behind it.\n\nIf you're at Dockside Expo in September, coffee's on me. I'm a good source of war stories on scaling vertical SaaS, if nothing else.\n\nKevin",
         },
+      },
+    },
+
+    // ═══════════════ Nathan Lim's book ═══════════════
+
+    // Curious founder, early dialogue
+    {
+      id: "kestrel",
+      company: "Kestrel ComplyWare",
+      vertical: "EHS compliance SaaS for mid-market manufacturers",
+      location: "Charlotte, NC",
+      brand: { color: "#0b7285", initials: "KC", mark: "kestrel" },
+      stage: "Early dialogue",
+      owner: { name: "Susan Park", title: "Founder & CEO", age: 55, tenure: 18, profile: "Built Kestrel from a consulting practice. Asked one sharp question and went quiet — evaluating us as much as we're evaluating her." },
+      financials: { revenue: 11.4, ebitdaMargin: 26, arrPct: 84, employees: 61, note: "108% net retention; top-quartile EHS asset" },
+      scores: { likelihood: 50, close: 24 },
+      nextTouch: { due: "2026-08-05", action: "Answer Susan's 'what's your model' — with proof, not pitch", reason: "She asked a real question 2 weeks ago; a considered answer is the door." },
+      blockers: [
+        { id: "b1", closeWeight: 7, label: "Her question is unanswered", status: "blocked", detail: "'What's your model — hold or flip?' deserves evidence: hold record, team retention, founder references.", action: { id: "act-kestrel-proof", label: "Send the hold-forever evidence pack + 2 founder references", artifactType: "email" } },
+        { id: "b2", closeWeight: 5, label: "No live conversation yet", status: "pending", detail: "All written so far. A 30-minute call converts curiosity into a process.", action: { id: "act-kestrel-call", label: "Propose a 30-min intro call", artifactType: "task" } },
+      ],
+      signals: [
+        { id: "s-nrr", label: "Elite retention", value: "108% net revenue retention", contribution: +3, source: "crm", detail: "From her own reply — she volunteered the number, which is a tell." },
+        { id: "s-age", label: "Tenure inflection", value: "Founder 55, 18 years in", contribution: +2, source: "web", detail: "Recently stepped back from the sales org per LinkedIn title change." },
+      ],
+      activity: [
+        { date: "2026-06-18", rep: "Nathan Lim", type: "email", direction: "out", subject: "[E1] - Acquisition interest in Kestrel from Fluent", sentiment: "none", note: "Intro email." },
+        { date: "2026-07-14", rep: "Nathan Lim", type: "email", direction: "in", subject: "[In] Re: Acquisition interest", sentiment: "warm", note: "Susan: 'What's your model — hold or flip? NRR is 108%, so I'm not desperate.'", body: "Nathan,\n\nI get four of these a month. Two questions before I spend any time:\n\nWhat's your model — hold or flip?\nAnd who do I call who's sold to you?\n\nOur NRR is 108%, so I'm not desperate.\n\nSusan" },
+      ],
+      details: {
+        leadOwner: "Nathan", accountOwner: "Nathan Lim", industry: "EHS Software", yearEstablished: 2008,
+        domain: "kestrelcomplyware.com", employees: 61, firstEmailDate: "2026-06-18", responded: "Yes", interest: "Tier 1",
+        responseType: "Positive — qualifying us", ndaIssued: "No", stage: "Early Dialogue",
+        address: "Charlotte, NC, USA", recurringRevenue: "$9.6M ARR", revenues: "$11.4M",
+        nextSteps: "Evidence pack + founder references",
+        exclusivity: { status: "None", challengeStatus: "None" },
+        scraping: { employeeCountBest: 66, revenueBestUsd: "$11,900,000", fundingStatus: "bootstrapped_likely", hqCity: "Charlotte", hqCountry: "US", successionScore: 44, acquisitionFitScore: 78, acquisitionFitBand: "high", foundedYear: 2008, llmIsVms: "yes", llmVertical: "ehs_compliance", llmSubVertical: "EHS incident & audit management", llmTargetCustomer: "mid-market manufacturers", matchConfidence: 100, revenueModel: "SaaS / Subscription", llmRevenueModel: "saas_subscription", llmProductSummary: "Kestrel provides EHS incident, audit, and compliance management software.", llmConfidence: 88 },
+        systemInfo: { createdBy: "Nathan Lim", createdDate: "2026-06-18", lastModifiedBy: "Nathan Lim", lastModifiedDate: "2026-07-14" },
+        ownerHistory: [], opportunities: [], notes: [{ title: "Her 2 qualifying questions", date: "2026-07-14" }],
+      },
+      cachedAnalysis: {
+        likelihoodNarrative: "Kestrel sits at 55: one inbound reply, but it was the right kind — a founder qualifying the buyer instead of deflecting. 'I'm not desperate' plus a volunteered NRR figure means she's priced the business in her head and is auditioning acquirers.",
+        relationshipRead: { summary: "Two touches, one reply — but the reply did more work than most first meetings. She asked for the model and references, which is diligence, not politeness.", touchVolume: "2 touches / 1 rep / 1 month — 1 inbound", sentimentArc: "Cold intro → warm, qualifying reply", wentColdWhen: "N/A — ball is in our court", wentColdWhy: "N/A", ownerMood: "Confident, unhurried, testing for seriousness." },
+        archetype: { label: "Qualifying Founder", description: "Strong operator with options. Will engage exactly as fast as we prove we're worth engaging with.", whatToExpect: "Expect her to actually call the references. Expect a direct, terms-forward conversation once satisfied — qualifying founders skip the dance. Slow or salesy responses end it silently.", nextBehavior: "She'll wait for the evidence pack, check the references within a week, then either book the call or go quiet permanently.", flashpoints: ["A pitch deck instead of an answer", "Dodging the hold-vs-flip question", "Generic references"], dealTwin: "Mirrors our qualifying-founder pattern: those who asked for references closed at twice the base rate — the question IS the buying signal." },
+        revivalRadar: null,
+        recommendedAction: { title: "Answer her straight — hold record + two founder references", rationale: "She asked two questions. The whole play is answering both, fast and without spin.", artifactType: "email", artifact: "Subject: Straight answers\n\nSusan,\n\nHold. We've acquired 24 vertical software companies and sold zero. The two founders below sold to us in 2023 and 2024 — call them without me on the line:\n\n• Duke Merrick, FuelServ (2023) — 555-0142\n• Elena Ruiz, ClinicWare (2024) — 555-0197\n\nWhen you've talked to them, I'd welcome 30 minutes.\n\nNathan" },
+      },
+    },
+
+    // Split co-founders
+    {
+      id: "orbita",
+      company: "Orbita ServiceDesk",
+      vertical: "Help desk & billing SaaS for MSPs",
+      location: "Tampa, FL",
+      brand: { color: "#5f3dc4", initials: "OS", mark: "orbita" },
+      stage: "Nurture — partners split on selling",
+      owner: { name: "Carlos Mena & Dre Whitfield", title: "Co-founders", age: 51, tenure: 14, profile: "Carlos (CEO) wants liquidity; Dre (CTO) says five more years. Nothing moves until they align — or until one buys the other out." },
+      financials: { revenue: 8.1, ebitdaMargin: 24, arrPct: 88, employees: 45, note: "50/50 cap table — the real blocker" },
+      scores: { likelihood: 44, close: 18 },
+      nextTouch: { due: "2026-08-20", action: "Quarterly coffee with Carlos — no deal talk, track the split", reason: "Partner-split pattern: the seller-side partner needs a patient confidant, not pressure." },
+      blockers: [
+        { id: "b1", closeWeight: 8, label: "Co-founders disagree on selling", status: "blocked", detail: "50/50 ownership; Dre isn't ready. Pressure consolidates them against selling — patience lets the split resolve.", action: { id: "act-orbita-coffee", label: "Keep the quarterly Carlos channel warm (coffee, no deal talk)", artifactType: "task" } },
+        { id: "b2", closeWeight: 4, label: "No relationship with Dre", status: "pending", detail: "The 'no' vote has never met us. A technical peer conversation (not corp dev) changes his picture of acquirers.", action: { id: "act-orbita-cto", label: "Arrange CTO-to-CTO intro via our platform architect", artifactType: "task" } },
+      ],
+      signals: [
+        { id: "s-split", label: "Partner intent split", value: "CEO exploring; CTO resisting", contribution: +2, source: "crm", detail: "Carlos said it plainly over coffee in May." },
+        { id: "s-msp", label: "MSP vertical consolidating", value: "3 MSP-tool peers acquired in 12 months", contribution: +1, source: "web", detail: "Exit comps are getting printed around them." },
+        { id: "s-hiring2", label: "Flat headcount", value: "45 for 5 quarters", contribution: -1, source: "web", detail: "Growth appetite cooling but not distressed." },
+      ],
+      activity: [
+        { date: "2026-02-11", rep: "Nathan Lim", type: "call", direction: "out", subject: "C1 - Intro call with Carlos", sentiment: "warm", note: "Carlos candid: 'I'd sell tomorrow. Dre wouldn't. Give us time.'" },
+        { date: "2026-05-09", rep: "Nathan Lim", type: "meeting", direction: "out", subject: "M1 - Coffee, Tampa", sentiment: "positive", note: "No deal talk. Carlos venting about the grind; Dre building an AI feature he thinks doubles the value." },
+      ],
+      details: {
+        leadOwner: "Nathan", accountOwner: "Nathan Lim", industry: "MSP Software", yearEstablished: 2012,
+        domain: "orbitaservicedesk.com", employees: 45, firstEmailDate: "2026-01-28", responded: "Yes", interest: "Tier 2",
+        responseType: "Split — CEO yes, CTO no", ndaIssued: "No", stage: "Nurture",
+        address: "Tampa, FL, USA", recurringRevenue: "$7.1M ARR", revenues: "$8.1M",
+        nextSteps: "Quarterly coffee cadence; CTO-to-CTO bridge",
+        exclusivity: { status: "None", challengeStatus: "None" },
+        scraping: { employeeCountBest: 48, revenueBestUsd: "$8,400,000", fundingStatus: "bootstrapped_likely", hqCity: "Tampa", hqCountry: "US", successionScore: 51, acquisitionFitScore: 74, acquisitionFitBand: "high", foundedYear: 2012, llmIsVms: "yes", llmVertical: "msp_tools", llmSubVertical: "help desk & billing for MSPs", llmTargetCustomer: "managed service providers", matchConfidence: 100, revenueModel: "SaaS / Subscription", llmRevenueModel: "saas_subscription", llmProductSummary: "Orbita provides ticketing, billing, and client portal software for MSPs.", llmConfidence: 84 },
+        systemInfo: { createdBy: "Nathan Lim", createdDate: "2026-01-28", lastModifiedBy: "Nathan Lim", lastModifiedDate: "2026-05-09" },
+        ownerHistory: [], opportunities: [], notes: [{ title: "Partner-split notes — Carlos coffee", date: "2026-05-09" }],
+      },
+      cachedAnalysis: {
+        likelihoodNarrative: "Orbita holds a 46 that's really two numbers: Carlos is an 80, Dre is a 15. Nothing transacts until the 50/50 split resolves — but split-partner deals resolve suddenly, and whoever is already trusted at the table wins without a process.",
+        relationshipRead: { summary: "Two live touches, both warm, both Carlos-only. The relationship asset is real but one-sided — the 'no' vote has never met us.", touchVolume: "2 touches / 1 rep / 4 months", sentimentArc: "Warm and candid from the first call", wentColdWhen: "N/A — deliberately slow cadence", wentColdWhy: "N/A", ownerMood: "Carlos: tired and ready. Dre: building, oblivious or resistant." },
+        archetype: { label: "Split Partners", description: "50/50 co-founders pulling opposite directions. The account behaves like two accounts wearing one cap table.", whatToExpect: "Expect nothing until a forcing event — Dre's AI bet plateauing, a health event, a big offer landing next door. When it breaks, it breaks fast, and the buyer already at the table wins. Do not pitch Dre; recruit him intellectually.", nextBehavior: "Carlos keeps venting quarterly. Dre ships the AI feature by year-end; its reception decides which way the split resolves.", flashpoints: ["Anything Dre could read as going around him", "Valuation talk while the partners disagree", "Pushing Carlos to 'work on' Dre"], dealTwin: "Mirrors our split-partner pattern: every one that closed did so within 90 days of the resisting partner's conversion event — and went to whoever had been quietly present for years." },
+        revivalRadar: null,
+        recommendedAction: { title: "CTO-to-CTO bridge — recruit Dre's respect, not his signature", rationale: "The only vote we don't have has never met a technical peer from our side. Zero deal content; pure architecture talk.", artifactType: "task", artifact: "Intro our platform architect to Dre via the MSP DevOps meetup both attend (Sept, Tampa). Topic: multi-tenant billing architecture — Dre's known pain. No corp dev present, no deal mention. Goal: Dre stops picturing acquirers as suits." },
+      },
+    },
+
+    // Distressed-channel seller
+    {
+      id: "brightspan",
+      company: "Brightspan LMS",
+      vertical: "Compliance training LMS for utilities",
+      location: "Columbus, OH",
+      brand: { color: "#b45309", initials: "BL", mark: "brightspan" },
+      stage: "Warm — channel shock, evaluating options",
+      owner: { name: "Marie Okafor-Bell", title: "Founder & CEO", age: 58, tenure: 21, profile: "Lost her largest reseller (34% of new bookings) in June when it was acquired by a competitor. Suddenly reading acquisition emails she used to delete." },
+      financials: { revenue: 6.8, ebitdaMargin: 23, arrPct: 81, employees: 38, note: "Renewal base solid; new-logo engine just broke" },
+      scores: { likelihood: 52, close: 26 },
+      nextTouch: { due: "2026-08-03", action: "Call Marie — channel-shock window is open now", reason: "She replied within 4 hours for the first time in 3 years. Strike while she's recalculating." },
+      blockers: [
+        { id: "b1", closeWeight: 8, label: "Window is open but unworked", status: "blocked", detail: "Channel shock has her evaluating options for the first time. The first credible acquirer to frame 'our distribution replaces your reseller' owns the conversation.", action: { id: "act-brightspan-call", label: "Book the call: 'our channel replaces your reseller' framing", artifactType: "email" } },
+        { id: "b2", closeWeight: 4, label: "She's anchored on pre-shock value", status: "pending", detail: "Bookings hit will show in 2 quarters. Kind framing now beats repricing fights later.", action: { id: "act-brightspan-frame", label: "Prepare 'value of certainty' framing for the first call", artifactType: "memo" } },
+      ],
+      signals: [
+        { id: "s-channel", label: "Channel shock", value: "Top reseller (34% of new bookings) acquired by competitor", contribution: +4, source: "web", detail: "June press release; reseller's new owner competes with Brightspan directly." },
+        { id: "s-reply", label: "Responsiveness flipped", value: "4-hour reply after 3 years of silence", contribution: +2, source: "crm", detail: "Behavior change is the strongest single indicator in the book." },
+      ],
+      activity: [
+        { date: "2023-09-12", rep: "Nathan Lim", type: "email", direction: "out", subject: "[E1] - Acquisition interest in Brightspan", sentiment: "none", note: "No reply. Annual cadence since." },
+        { date: "2025-10-02", rep: "Nathan Lim", type: "email", direction: "out", subject: "[RCE1] - Annual check-in", sentiment: "none", note: "No reply." },
+        { date: "2026-07-21", rep: "Nathan Lim", type: "email", direction: "out", subject: "[Out] Saw the TrainCo news — thinking of you", sentiment: "neutral", note: "Channel-shock timed touch." },
+        { date: "2026-07-21", rep: "Nathan Lim", type: "email", direction: "in", subject: "[In] Re: Saw the TrainCo news", sentiment: "warm", note: "REPLIED IN 4 HOURS: 'Timing is interesting. What did you have in mind?'", body: "Nathan,\n\nTiming is interesting.\n\nTrainCo was a third of our new business and their new owner competes with us. I've spent 21 years not thinking about this stuff and three weeks thinking about nothing else.\n\nWhat did you have in mind?\n\nMarie" },
+      ],
+      details: {
+        leadOwner: "Nathan", accountOwner: "Nathan Lim", industry: "EdTech / Compliance", yearEstablished: 2005,
+        domain: "brightspanlms.com", employees: 38, firstEmailDate: "2023-09-12", responded: "Yes", interest: "Tier 1",
+        responseType: "Positive — event-driven", ndaIssued: "No", stage: "Warm",
+        address: "Columbus, OH, USA", recurringRevenue: "$5.5M ARR", revenues: "$6.8M",
+        nextSteps: "Call this week — distribution-replacement framing",
+        exclusivity: { status: "None", challengeStatus: "None" },
+        scraping: { employeeCountBest: 41, revenueBestUsd: "$7,100,000", fundingStatus: "bootstrapped_likely", hqCity: "Columbus", hqCountry: "US", successionScore: 72, acquisitionFitScore: 76, acquisitionFitBand: "high", foundedYear: 2005, llmIsVms: "yes", llmVertical: "edtech", llmSubVertical: "compliance training for utilities", llmTargetCustomer: "utilities & energy field workforces", matchConfidence: 100, revenueModel: "SaaS / Subscription", llmRevenueModel: "saas_subscription", llmProductSummary: "Brightspan provides compliance training and certification tracking for utility workforces.", llmConfidence: 83 },
+        systemInfo: { createdBy: "Nathan Lim", createdDate: "2023-09-12", lastModifiedBy: "Nathan Lim", lastModifiedDate: "2026-07-21" },
+        ownerHistory: [], opportunities: [], notes: [{ title: "TrainCo acquisition — channel impact math", date: "2026-07-21" }],
+      },
+      cachedAnalysis: {
+        likelihoodNarrative: "Brightspan jumped to 58 on a behavior flip: three years of deleted emails, then a 4-hour reply the week her channel broke. Event-driven sellers move fast while the wound is fresh — and slow back down once they've patched the channel themselves.",
+        relationshipRead: { summary: "Three years of one-way annual touches, then one perfectly-timed note cracked it open. The relationship is 4 hours old in every way that matters.", touchVolume: "4 touches / 1 rep / 3 years — 1 inbound (last week)", sentimentArc: "Silent → silent → warm overnight on the channel shock", wentColdWhen: "Was never warm until now", wentColdWhy: "N/A", ownerMood: "Rattled but clear-eyed. 'Three weeks thinking about nothing else' is a seller doing the math for the first time." },
+        archetype: { label: "Event-Driven Seller", description: "Wasn't a seller a month ago. The event opened a window; the window closes when she adapts or panic fades.", whatToExpect: "Expect fast engagement now and price sensitivity later — she'll anchor on pre-shock value while her bookings say otherwise. Lead with what replaces her reseller (our distribution), not what her problem does to price.", nextBehavior: "She takes the call, asks about her team and the channel gap, and quietly runs a parallel search for a replacement reseller as her BATNA.", flashpoints: ["Any hint we see the TrainCo news as leverage on price", "Slow scheduling — the window is the asset", "Diligence-speak before trust"], dealTwin: "Mirrors our event-driven pattern: channel-shock sellers signed LOIs at 3x the base rate inside 90 days of the event — and near zero after they patched distribution." },
+        revivalRadar: null,
+        recommendedAction: { title: "Book the call — 'our channel replaces your reseller' framing", rationale: "The window is open now. Frame acquisition as the distribution fix, not a rescue.", artifactType: "email", artifact: "Subject: What I had in mind\n\nMarie,\n\nShort version: our portfolio sells into 400+ utilities today. Your product plus our channel makes TrainCo irrelevant — that's the conversation.\n\n30 minutes this week? Thursday morning works on my end.\n\nNathan" },
+      },
+    },
+
+    // Minority-investor liquidity push
+    {
+      id: "cobalt",
+      company: "Cobalt FieldOps",
+      vertical: "Field service SaaS for commercial HVAC",
+      location: "Phoenix, AZ",
+      brand: { color: "#1d4f9e", initials: "CF", mark: "cobalt" },
+      stage: "Early — investor nudging, founder content",
+      owner: { name: "Ray Osei", title: "Founder & CEO (70% owner)", age: 49, tenure: 11, profile: "Happy operator. His 30% minority investor (angel, aging) wants liquidity and keeps forwarding him acquirer emails — including ours." },
+      financials: { revenue: 9.2, ebitdaMargin: 21, arrPct: 90, employees: 52, note: "Steady 15% grower; no urgency anywhere except the cap table" },
+      scores: { likelihood: 47, close: 22 },
+      nextTouch: { due: "2026-10-01", action: "Structured-liquidity note to Ray (minority recap option)", reason: "A partial-liquidity structure lets the investor exit without Ray selling — and makes us the cap-table's friend." },
+      blockers: [
+        { id: "b1", closeWeight: 6, label: "Founder doesn't want to sell — investor does", status: "blocked", detail: "70/30 misalignment. A minority recap or structured secondary solves the investor without forcing Ray — and earns the inside track for the eventual full sale.", action: { id: "act-cobalt-recap", label: "Draft minority-recap concept note for Ray + investor", artifactType: "memo" } },
+        { id: "b2", closeWeight: 4, label: "No direct relationship with Ray", status: "pending", detail: "Everything so far is forwarded through the investor — a lossy, agenda-laden channel.", action: { id: "act-cobalt-direct", label: "Get 20 minutes with Ray directly at HVAC Comfortech (Sept)", artifactType: "task" } },
+      ],
+      signals: [
+        { id: "s-investor", label: "Cap-table pressure", value: "30% holder seeking liquidity", contribution: +3, source: "broker", detail: "Investor told our banker contact directly: 'I'm 74. I'd like this resolved.'" },
+        { id: "s-arr2", label: "Quality asset", value: "90% ARR, 15% growth", contribution: +1, source: "web", detail: "Would clear IC easily if it ever came to market." },
+        { id: "s-content", label: "Founder contentment", value: "No exit signals from Ray himself", contribution: -1, source: "crm", detail: "49, healthy, enjoying it. The pressure is entirely external." },
+      ],
+      activity: [
+        { date: "2026-04-30", rep: "Nathan Lim", type: "email", direction: "out", subject: "[E1] - Intro via Whitcombe (investor)", sentiment: "none", note: "Sent at investor's request; forwarded to Ray. No reply from Ray." },
+        { date: "2026-06-12", rep: "Nathan Lim", type: "call", direction: "out", subject: "C1 - Call with Whitcombe (30% holder)", sentiment: "neutral", note: "Investor eager, founder absent: 'Ray just needs to hear the right structure.'" },
+      ],
+      details: {
+        leadOwner: "Nathan", accountOwner: "Nathan Lim", industry: "Field Service Software", yearEstablished: 2015,
+        domain: "cobaltfieldops.com", employees: 52, firstEmailDate: "2026-04-30", responded: "Via investor only", interest: "Tier 2",
+        responseType: "Indirect", ndaIssued: "No", stage: "Early",
+        address: "Phoenix, AZ, USA", recurringRevenue: "$8.3M ARR", revenues: "$9.2M",
+        nextSteps: "Minority-recap concept + direct Ray relationship",
+        exclusivity: { status: "None", challengeStatus: "None" },
+        scraping: { employeeCountBest: 55, revenueBestUsd: "$9,600,000", fundingStatus: "angel_backed", hqCity: "Phoenix", hqCountry: "US", successionScore: 22, acquisitionFitScore: 79, acquisitionFitBand: "high", foundedYear: 2015, llmIsVms: "yes", llmVertical: "field_service", llmSubVertical: "field service management for commercial HVAC", llmTargetCustomer: "commercial HVAC contractors", matchConfidence: 100, revenueModel: "SaaS / Subscription", llmRevenueModel: "saas_subscription", llmProductSummary: "Cobalt provides dispatch, quoting, and maintenance-contract management for HVAC contractors.", llmConfidence: 86 },
+        systemInfo: { createdBy: "Nathan Lim", createdDate: "2026-04-30", lastModifiedBy: "Nathan Lim", lastModifiedDate: "2026-06-12" },
+        ownerHistory: [], opportunities: [], notes: [{ title: "Whitcombe call — liquidity ask", date: "2026-06-12" }],
+      },
+      cachedAnalysis: {
+        likelihoodNarrative: "Cobalt reads 50: a genuinely happy founder and a genuinely motivated 30% holder. Nothing here forces a sale — but a structured partial liquidity solves the only unhappy party and buys the inside position for the day Ray's math changes.",
+        relationshipRead: { summary: "Two touches, both through or with the investor — Ray himself has never spoken to us. The channel is willing but lossy, and it wraps everything we send in the investor's agenda.", touchVolume: "2 touches / 1 rep / 3 months — 0 from Ray", sentimentArc: "Investor-warm, founder-unknown", wentColdWhen: "Never engaged directly", wentColdWhy: "N/A", ownerMood: "Ray: content, mildly annoyed by the forwarding. Whitcombe: politely impatient at 74." },
+        archetype: { label: "Content Founder, Pressured Cap Table", description: "The seller isn't the founder — it's 30% of his company. Different playbook: solve the minority, befriend the majority.", whatToExpect: "Expect Ray to ignore anything that smells like a takeover and engage with anything that removes the nagging. A minority recap proposal gets a meeting; a full-acquisition pitch gets forwarded to spam. The full sale happens in 3-5 years on Ray's clock — to whoever solved this politely.", nextBehavior: "Whitcombe keeps forwarding. Ray keeps deflecting until someone offers a structure that makes the forwarding stop.", flashpoints: ["Full-buyout framing", "Anything that reads as siding with the investor against him", "Valuing the company off his happiest quarter"], dealTwin: "Mirrors our minority-recap pattern: partial-liquidity deals converted to full acquisitions within 4 years in most cases — always without a competing process, because we were already on the inside." },
+        revivalRadar: null,
+        recommendedAction: { title: "Minority-recap concept note — solve Whitcombe, befriend Ray", rationale: "Remove the only pressure in the system and become the obvious future buyer. Cheap, differentiated, and nobody else in our space offers it.", artifactType: "memo", artifact: "CONCEPT — Cobalt minority recap\n\nStructure: Fluent acquires Whitcombe's 30% at a fair institutional mark (~$5.5M on a $18.5M EV). Ray keeps 70% and full control. Board seat: observer only. Right of first offer on any future sale — not an option, not a drag-along.\n\nFraming to Ray: 'Your investor gets his retirement; you get a quiet cap table and a partner who's already done the diligence if you ever want more.'\n\nDeliver: one page, through Ray directly (not Whitcombe), at Comfortech in September." },
       },
     },
   ];

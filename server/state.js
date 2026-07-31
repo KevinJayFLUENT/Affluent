@@ -176,6 +176,18 @@ const ACTION_EFFECTS = {
   "act-arr": { targetId: "hartline", likelihood: +1, close: +3, blockerId: "b2" },
   "act-intro": { targetId: "plexa", likelihood: +4, close: +3, blockerId: "b1",
     nextTouch: { due: "2026-09-08", action: "Coffee with Jess Okafor at Dockside Expo", reason: "Intro sent; conference coffee is the natural follow-through." } },
+  "act-kestrel-proof": { targetId: "kestrel", likelihood: +5, close: +7, blockerId: "b1",
+    nextTouch: { due: "2026-08-14", action: "Follow up once Susan has called the references", reason: "Give her a week to check; qualifying founders do their homework fast." } },
+  "act-kestrel-call": { targetId: "kestrel", likelihood: +2, close: +5, blockerId: "b2" },
+  "act-orbita-coffee": { targetId: "orbita", likelihood: +2, close: +3, blockerId: "b1",
+    nextTouch: { due: "2026-11-18", action: "Next quarterly coffee with Carlos", reason: "Split-partner cadence: present, patient, no pressure." } },
+  "act-orbita-cto": { targetId: "orbita", likelihood: +3, close: +4, blockerId: "b2" },
+  "act-brightspan-call": { targetId: "brightspan", likelihood: +6, close: +8, blockerId: "b1",
+    nextTouch: { due: "2026-08-07", action: "Thursday call with Marie — distribution framing", reason: "Channel-shock window: engagement decays as she patches the reseller gap." } },
+  "act-brightspan-frame": { targetId: "brightspan", likelihood: +2, close: +4, blockerId: "b2" },
+  "act-cobalt-recap": { targetId: "cobalt", likelihood: +5, close: +6, blockerId: "b1",
+    nextTouch: { due: "2026-09-15", action: "Hand Ray the recap one-pager at Comfortech", reason: "In person, direct to Ray — not through the investor channel." } },
+  "act-cobalt-direct": { targetId: "cobalt", likelihood: +3, close: +4, blockerId: "b2" },
 };
 
 export function applyAction(targetId, actionId) {

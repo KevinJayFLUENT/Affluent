@@ -67,6 +67,60 @@ const MARKS = {
       <path d="M11 40 C20 38 28 38 37 40 C28 39.2 20 39.2 11 41.5 Z" fill="#111111" />
     </svg>
   ),
+  // Plexa: blue rounded strokes — diagonal, chevron, short stroke, dot
+  plexa: (
+    <svg viewBox="0 0 48 48" width="80%" height="80%">
+      <g stroke="#0d6ef5" strokeWidth="7.5" strokeLinecap="round" strokeLinejoin="round" fill="none">
+        <line x1="10" y1="7" x2="34" y2="40" />
+        <path d="M43 7 L30.5 19 L43 31" />
+        <line x1="10" y1="23" x2="23" y2="41" />
+      </g>
+      <circle cx="9.5" cy="42" r="4.6" fill="#0d6ef5" />
+    </svg>
+  ),
+  // Kestrel: shield + check, wing notch (compliance with a raptor's edge)
+  kestrel: (
+    <svg viewBox="0 0 48 48" width="72%" height="72%">
+      <path d="M24 5 L40 11 V24 C40 33 33 40 24 43 C15 40 8 33 8 24 V11 Z" fill="#ffffff" />
+      <path d="M15.5 24.5 L21.5 30.5 L33 18" fill="none" stroke="#0b7285" strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M31 7.5 L40 4 L36.5 12" fill="#ffffff" />
+    </svg>
+  ),
+  // Orbita: planet + tilted orbit ring with satellite
+  orbita: (
+    <svg viewBox="0 0 48 48" width="78%" height="78%">
+      <circle cx="24" cy="24" r="9" fill="#ffffff" />
+      <ellipse cx="24" cy="24" rx="19" ry="7.5" fill="none" stroke="#ffffff" strokeWidth="2.6" transform="rotate(-24 24 24)" />
+      <circle cx="39.5" cy="14.5" r="3.4" fill="#ffffff" />
+    </svg>
+  ),
+  // Brightspan: sunrise over a span
+  brightspan: (
+    <svg viewBox="0 0 48 48" width="76%" height="76%">
+      <path d="M12 30 A12 12 0 0 1 36 30 Z" fill="#ffffff" />
+      <g stroke="#ffffff" strokeWidth="3" strokeLinecap="round">
+        <line x1="24" y1="8" x2="24" y2="13" />
+        <line x1="11" y1="13" x2="14.5" y2="16.5" />
+        <line x1="37" y1="13" x2="33.5" y2="16.5" />
+      </g>
+      <path d="M7 38 C15 33.5 33 33.5 41 38" fill="none" stroke="#ffffff" strokeWidth="3.4" strokeLinecap="round" />
+    </svg>
+  ),
+  // Cobalt: hexagon cell + three-blade fan (airflow)
+  cobalt: (
+    <svg viewBox="0 0 48 48" width="76%" height="76%">
+      <path d="M24 5 L39.5 14 V33 L24 42 L8.5 33 V14 Z" fill="none" stroke="#ffffff" strokeWidth="2.8" strokeLinejoin="round" />
+      {[0, 120, 240].map((deg) => (
+        <path
+          key={deg}
+          d="M24 23 C26 17.5 25 12.5 21.5 10.5 C28 11 31.5 15.5 29 21.5 C27.8 24 25.2 24.5 24 23 Z"
+          fill="#ffffff"
+          transform={`rotate(${deg} 24 24)`}
+        />
+      ))}
+      <circle cx="24" cy="24" r="2.6" fill="#ffffff" />
+    </svg>
+  ),
   // Hartline: hatched heart, blue grid, C, EKG trace
   hartline: (
     <svg viewBox="0 0 48 48" width="84%" height="84%">
