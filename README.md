@@ -21,7 +21,7 @@ zero network risk. On Vercel, set `ANTHROPIC_API_KEY` in project env vars.
 1. **Start on Mission Control** — the agent's read of your day: the weekly
    portfolio sweep digest ("Run sweep"), touches due (Merritt overdue, Vantage
    today), and open agent tasks.
-2. **Pipeline** — six accounts in a Salesforce-style list with KPI tiles
+2. **Pipeline** — ten accounts (two deal leads: Kevin Jay & Nathan Lim) in a Salesforce-style list with location flags with KPI tiles
    (avg likelihood, catalysts, touches due, tasks). The enrichment sweep runs on
    load: signal pills land, scores tick, sparklines draw, and **Vantage Permit
    Systems flares "Catalyst"** (48 → 63). Click the Catalysts tile to filter;
@@ -72,7 +72,7 @@ zero network risk. On Vercel, set `ANTHROPIC_API_KEY` in project env vars.
   - **Neither available** (e.g. bare Vercel): falls back to seeded in-memory data
     per warm instance, the pre-Phase-3 behavior.
 - `server/state.js` — the database is the single source of truth. On first run the
-  six demo companies migrate from `targets.js` into the DB as ordinary records
+  ten demo companies migrate from `targets.js` into the DB as ordinary records
   (origin: `seed`) with staggered exclusivity backfill (Active / Expiring Soon /
   Expired); from then on they're editable and re-scorable through the same code
   paths as user-created accounts. `targets.js` remains only as the seed source.
@@ -82,7 +82,7 @@ zero network risk. On Vercel, set `ANTHROPIC_API_KEY` in project env vars.
   status (Active / Expiring Soon / Expired) is always computed from the dates.
 - `server/accounts.js` — new-account skeleton + AI enrichment (exact 20-field
   scraping schema, validated server-side; plausible mock offline).
-- `server/data/targets.js` — six seeded top-funnel accounts + the deal-twin pattern
+- `server/data/targets.js` — ten seeded top-funnel accounts + the deal-twin pattern
   library (silent founders, dead-deal revival, intermediary effect…). The hero,
   Vantage, carries a KIU-density history: 38 touches, 4 reps, RCE campaigns, full
   mock email bodies.
