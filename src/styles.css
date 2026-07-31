@@ -38,33 +38,35 @@ body {
 
 .app { max-width: 1600px; margin: 0 auto; padding: 0 28px 60px; }
 
-/* ── Top bar ─────────────────────────────── */
+/* ── Top bar — deep royal blue, stays pinned on scroll ─────────────── */
 .topbar {
   display: flex; justify-content: space-between; align-items: center;
   padding: 14px 24px; margin: 0 -28px 28px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--line);
+  background: #1e3a8a;
+  border-bottom: 1px solid #16296b;
+  position: sticky; top: 0; z-index: 90;
+  box-shadow: 0 2px 12px rgba(16, 24, 40, 0.18);
 }
 .brand { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
-.brand-name { font-weight: 750; letter-spacing: 2.5px; font-size: 16px; color: var(--text); }
-.brand-sub { font-weight: 400; letter-spacing: 2.5px; font-size: 16px; color: var(--text-faint); }
+.brand-name { font-weight: 750; letter-spacing: 2.5px; font-size: 16px; color: #ffffff; }
+.brand-sub { font-weight: 400; letter-spacing: 2.5px; font-size: 16px; color: #93c5fd; }
 .topbar-right { display: flex; gap: 12px; align-items: center; }
 .ai-pill {
   display: inline-flex; align-items: center; gap: 7px;
-  border: 1px solid var(--line); border-radius: 999px; padding: 5px 13px;
-  font-size: 12px; color: var(--text-dim); background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; padding: 5px 13px;
+  font-size: 12px; color: #c7d6f5; background: rgba(255, 255, 255, 0.06);
 }
-.ai-pill.live { color: var(--green); border-color: #bbe5c8; background: var(--green-soft); }
+.ai-pill.live { color: #7ee8a8; border-color: rgba(126, 232, 168, 0.45); background: rgba(46, 132, 74, 0.18); }
 .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
 .dot.pulse { animation: pulse 1.8s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-.user-chip { font-size: 12.5px; color: var(--text-dim); }
+.user-chip { font-size: 12.5px; color: rgba(255, 255, 255, 0.66); }
 .reset-btn {
-  background: var(--panel); border: 1px solid var(--line); color: var(--text-faint);
+  background: transparent; border: 1px solid rgba(255, 255, 255, 0.3); color: rgba(255, 255, 255, 0.7);
   border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 14px;
 }
-.reset-btn:hover { color: var(--text-dim); border-color: var(--text-faint); }
-.fluent-mark { display: inline-flex; align-items: center; margin-left: 6px; padding-left: 14px; border-left: 1px solid var(--line); }
+.reset-btn:hover { color: #fff; border-color: rgba(255, 255, 255, 0.6); }
+.fluent-mark { display: inline-flex; align-items: center; margin-left: 6px; padding-left: 14px; border-left: 1px solid rgba(255, 255, 255, 0.22); }
 
 /* ── Board ───────────────────────────────── */
 .board-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 20px; }
@@ -666,17 +668,17 @@ body {
 .footer-tagline { color: var(--text-dim); padding-left: 16px; border-left: 1px solid var(--line); }
 .footer-legal { margin-left: auto; font-size: 11.5px; }
 
-/* Main nav */
+/* Main nav (on the royal-blue bar) */
 .main-nav { display: flex; gap: 4px; margin-left: 28px; margin-right: auto; }
 .nav-link {
-  background: transparent; border: none; color: var(--text-dim); font-size: 13.5px; font-weight: 550;
+  background: transparent; border: none; color: rgba(255, 255, 255, 0.72); font-size: 13.5px; font-weight: 550;
   padding: 8px 14px; cursor: pointer; border-radius: 8px;
   display: inline-flex; align-items: center; gap: 7px;
 }
-.nav-link:hover { background: var(--panel-2); color: var(--text); }
-.nav-link.active { color: var(--blue); background: var(--blue-soft); font-weight: 600; }
+.nav-link:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.nav-link.active { color: #fff; background: rgba(255, 255, 255, 0.16); font-weight: 600; }
 .nav-badge {
-  background: var(--blue); color: #fff; font-size: 10.5px; font-weight: 700;
+  background: #ffffff; color: #1e3a8a; font-size: 10.5px; font-weight: 700;
   border-radius: 999px; padding: 1px 7px; min-width: 18px; text-align: center;
 }
 .nav-link { position: relative; }

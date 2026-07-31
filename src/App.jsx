@@ -193,7 +193,7 @@ export default function App() {
             <RotateCcw size={15} />
           </button>
           <span className="fluent-mark" title="Fluent">
-            <FluentLogo size={30} />
+            <FluentLogo size={30} variant="mono" />
           </span>
         </div>
       </header>
